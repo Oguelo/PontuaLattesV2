@@ -1,4 +1,4 @@
-# IC_COLLECT
+# IC COLLECT
 
 Projeto desenvolvido para automatizar a análise de um barema de Iniciação Científica (IC) a partir dos dados do currículo Lattes.
 
