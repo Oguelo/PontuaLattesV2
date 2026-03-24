@@ -2,7 +2,19 @@ import requests
 import re
 import time
 import ast
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
+
+
+DEFAULT_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (X11; Linux x86_64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/123.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Connection": "close",
+}
 
 
 def _is_request_error(value):
@@ -18,28 +30,53 @@ def normalize_lattes_url(url):
     parsed = urlparse(url.strip())
 
     if not parsed.scheme:
-        return f"http://{url.strip()}"
-
-    if parsed.scheme == "https" and parsed.netloc.lower() == "lattes.cnpq.br":
-        return parsed._replace(scheme="http").geturl()
+        return f"https://{url.strip()}"
 
     return url.strip()
+
+
+def _request_with_retry(url, *, timeout=10, allow_redirects=True, encoding=None):
+    last_error = None
+
+    for attempt in range(5):
+        try:
+            response = requests.get(
+                url,
+                headers=DEFAULT_HEADERS,
+                timeout=timeout,
+                allow_redirects=allow_redirects,
+            )
+            response.raise_for_status()
+
+            if encoding:
+                response.encoding = encoding
+
+            return response
+        except requests.RequestException as error:
+            last_error = error
+            if attempt == 4:
+                return str(last_error)
+            time.sleep(1)
+
+    return str(last_error) if last_error else None
 
 # Busca o código do Lattes
 def get_lattes_code(url):
     url = normalize_lattes_url(url)
-    html = ""
-    for i in range(5):
-        try:
-            # Faz a requisição
-            resposta = requests.get(url, timeout=10)
-            resposta.raise_for_status()  # Verifica erros HTTP
-            html = resposta.text
-            break
-        except requests.RequestException as e:
-            if i == 4:  # Retorna o erro na última tentativa
-                return str(e)
-            time.sleep(1)  # Aguarda para tentar de novo
+    resposta_inicial = _request_with_retry(url, allow_redirects=False)
+
+    if isinstance(resposta_inicial, str):
+        return resposta_inicial
+
+    redirect_url = resposta_inicial.headers.get("Location")
+    target_url = urljoin(resposta_inicial.url, redirect_url) if redirect_url else resposta_inicial.url
+
+    resposta_final = _request_with_retry(target_url, allow_redirects=True, encoding="ISO-8859-1")
+
+    if isinstance(resposta_final, str):
+        return resposta_final
+
+    html = resposta_final.text
 
     # Busca o valor do ID
     padrao = r'<input type="hidden" name="id" value="([^"]+)"'
@@ -52,24 +89,19 @@ def get_lattes_code(url):
 # Busca o HTML de preview
 def get_lattes_pview_html(code):
     url = f"http://buscatextual.cnpq.br/buscatextual/preview.do?metodo=apresentar&id={code}"
-    for _ in range(5):
-        try:
-            resposta = requests.get(url, timeout=10)
-            resposta.encoding = 'ISO-8859-1'  # Define o charset
-            return resposta.text
-        except requests.RequestException:
-            time.sleep(1)
+    resposta = _request_with_retry(url, encoding="ISO-8859-1")
+    if isinstance(resposta, str):
+        return None
+    return resposta.text
     return None
 
 # Busca o HTML dos índices
 def get_lattes_index_html(code):
     url = f"http://buscatextual.cnpq.br/buscatextual/graficos.do?metodo=apresentar&codRHCript={code}"
-    for _ in range(5):
-        try:
-            resposta = requests.get(url, timeout=10)
-            return resposta.text
-        except requests.RequestException:
-            time.sleep(1)
+    resposta = _request_with_retry(url)
+    if isinstance(resposta, str):
+        return None
+    return resposta.text
     return None
 
 
