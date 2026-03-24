@@ -67,13 +67,20 @@ function renderSummary(resultado, previewHtml) {
 	const publicacoes = resultado.publicacoes || {};
 	const pesquisador = extractResearcherName(resultado, previewHtml);
 	const anoMinimo = getMinimumBaremaYear();
+
+	const anosLimpos = (publicacoes.anos || [])
+		.map(a => String(a).trim())
+		.filter(a => a !== '' && !isNaN(Number(a)));
+
 	const itens = [
 		['Nome', pesquisador],
 		['URL consultada', resultado.url || '-'],
-		['Anos encontrados', (publicacoes.anos || []).join(', ') || 'Nenhum'],
+		['Anos encontrados', anosLimpos.join(', ') || 'Nenhum'],
 		[
 			`Anos desde ${anoMinimo}`,
-			(publicacoes.anos || []).filter((ano) => Number.isInteger(Number(ano)) && Number(ano) >= anoMinimo).join(', ') || 'Nenhum',
+			anosLimpos
+				.filter(ano => Number(ano) >= anoMinimo)
+				.join(', ') || 'Nenhum',
 		],
 	];
 
