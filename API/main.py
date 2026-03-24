@@ -1,46 +1,111 @@
+import json
+import mimetypes
+from http import HTTPStatus
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
+
 from controller import buscaLattes
 
 
-def main():
-	print("###### COLETA DE CURRÍCULO LATTES ######\n")
+BASE_DIR = Path(__file__).resolve().parent
+SPA_DIR = BASE_DIR.parent / "SPA"
+INDEX_FILE = SPA_DIR / "index.html"
+HOST = "127.0.0.1"
+PORT = 8000
 
-	url_lattes = input("URL do currículo Lattes: ").strip()
 
-	if not url_lattes:
-		print("Nenhuma URL foi informada.")
-		return
+class ICCollectHandler(BaseHTTPRequestHandler):
+    def _resolve_static_path(self, request_path):
+        relative_path = request_path.lstrip("/") or "index.html"
+        file_path = (SPA_DIR / relative_path).resolve()
 
-	resultado = buscaLattes(url_lattes)
+        try:
+            file_path.relative_to(SPA_DIR.resolve())
+        except ValueError:
+            return None
 
-	if not resultado["success"]:
-		detalhe = f" Detalhe: {resultado['code']}" if resultado["code"] else ""
-		print(f"{resultado['message']}{detalhe}")
-		return
+        return file_path if file_path.exists() and file_path.is_file() else None
 
-	preview_tamanho = len(resultado["preview_html"]) if resultado["preview_html"] else 0
-	index_tamanho = len(resultado["index_html"]) if resultado["index_html"] else 0
-	publicacoes = resultado.get("publicacoes", {})
-	publicacoes_desde_2021 = publicacoes.get("series_desde_2021", [])
+    def _send_json(self, payload, status=HTTPStatus.OK):
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
-	print("\nColeta concluída com sucesso.")
-	print(f"Código interno: {resultado['code']}")
-	print(f"Tamanho do HTML de preview: {preview_tamanho} caracteres")
-	print(f"Tamanho do HTML de índices: {index_tamanho} caracteres")
-	print(f"Total de publicações encontradas nos indicadores: {publicacoes.get('total_geral', 0)}")
+    def _send_html(self, content, status=HTTPStatus.OK):
+        body = content.encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
-	print("\n###### PUBLICAÇÕES DESDE 2021 ######\n")
-	if publicacoes_desde_2021:
-		for item in publicacoes_desde_2021:
-			print(f"{item['nome']}: {item['total']}")
-			print(f"Por ano: {item['por_ano']}")
-	else:
-		print("Nenhuma publicação encontrada nos indicadores a partir de 2021.")
+    def _send_file(self, file_path, status=HTTPStatus.OK):
+        body = file_path.read_bytes()
+        content_type, _ = mimetypes.guess_type(file_path.name)
+        self.send_response(status)
+        self.send_header("Content-Type", f"{content_type or 'application/octet-stream'}; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
-	print("\n###### CONTEÚDO DA PÁGINA PREVIEW ######\n")
-	print(resultado["preview_html"] if resultado["preview_html"] else "Nenhum conteúdo de preview encontrado.")
-	print("\n###### CONTEÚDO DA PÁGINA DE ÍNDICES ######\n")
-	print(resultado["index_html"] if resultado["index_html"] else "Nenhum conteúdo de índices encontrado.")
+    def do_GET(self):
+        if self.path == "/health":
+            self._send_json({"status": "ok"})
+            return
+
+        file_path = self._resolve_static_path(self.path)
+        if file_path:
+            self._send_file(file_path)
+            return
+
+        if self.path in ("/", "/index.html") and not INDEX_FILE.exists():
+            self._send_html("<h1>Arquivo index.html não encontrado.</h1>", HTTPStatus.NOT_FOUND)
+            return
+
+        self._send_json({"success": False, "message": "Rota não encontrada."}, HTTPStatus.NOT_FOUND)
+
+    def do_POST(self):
+        if self.path != "/api/lattes":
+            self._send_json({"success": False, "message": "Rota não encontrada."}, HTTPStatus.NOT_FOUND)
+            return
+
+        content_length = int(self.headers.get("Content-Length", "0"))
+        raw_body = self.rfile.read(content_length).decode("utf-8") if content_length else "{}"
+
+        try:
+            payload = json.loads(raw_body or "{}")
+        except json.JSONDecodeError:
+            self._send_json(
+                {"success": False, "message": "Corpo da requisição inválido."},
+                HTTPStatus.BAD_REQUEST,
+            )
+            return
+
+        url_lattes = str(payload.get("url") or "").strip()
+        if not url_lattes:
+            self._send_json(
+                {
+                    "success": False,
+                    "message": "Informe a URL do currículo Lattes.",
+                    "code": None,
+                },
+                HTTPStatus.BAD_REQUEST,
+            )
+            return
+
+        resultado = buscaLattes(url_lattes)
+        status = HTTPStatus.OK if resultado.get("success") else HTTPStatus.BAD_GATEWAY
+        self._send_json(resultado, status)
+
+
+def run():
+    server = ThreadingHTTPServer((HOST, PORT), ICCollectHandler)
+    print(f"Servidor disponível em http://{HOST}:{PORT}")
+    server.serve_forever()
 
 
 if __name__ == "__main__":
-	main()
+    run()

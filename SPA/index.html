@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>IC Collect</title>
+	<link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+	<main class="page">
+		<section class="hero">
+			<h1>IC Collect</h1>
+			<p>
+				Informe a URL de um currículo Lattes para realizar a coleta de dados.
+			</p>
+		</section>
+
+		<section class="panel form-panel">
+			<form id="lattes-form">
+				<div>
+					<label for="lattes-url">URL do currículo Lattes</label>
+					<div class="input-row">
+						<input
+							id="lattes-url"
+							name="url"
+							type="url"
+							placeholder="https://lattes.cnpq.br/1431810842888468"
+							required
+						>
+						<button id="submit-button" type="submit">Consultar</button>
+					</div>
+				</div>
+				<p class="helper-text">
+					A página envia a URL para a consulta do currículo Lattes.
+				</p>
+				<div id="status" class="status" aria-live="polite"></div>
+			</form>
+		</section>
+
+		<section id="results" class="results">
+			<div class="summary">
+				<article class="panel stat-card">
+					<h2>Total do barema</h2>
+					<div id="stat-barema-total" class="stat-value">0</div>
+					<div class="stat-label">Pontuação máxima: 60 pontos</div>
+				</article>
+
+				<article class="panel stat-card">
+					<h2>Total de publicações</h2>
+					<div id="stat-total" class="stat-value">0</div>
+					<div class="stat-label">Soma das séries bibliográficas extraídas</div>
+				</article>
+			</div>
+
+			<article class="panel details-card">
+				<h2>Resumo da coleta</h2>
+				<ul class="details-list" id="summary-list"></ul>
+			</article>
+
+			<article class="panel details-card">
+				<h2 id="publications-title">Publicações nos últimos 5 anos</h2>
+				<div id="publication-list" class="publication-list"></div>
+			</article>
+
+			<article class="panel details-card">
+				<h2>Barema docente</h2>
+				<div id="barema-summary" class="barema-summary"></div>
+				<div id="barema-sections" class="barema-sections"></div>
+				<div id="barema-observations" class="barema-observations"></div>
+			</article>
+		</section>
+	</main>
+	<script src="/app.js" defer></script>
+</body>
+</html>

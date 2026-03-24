@@ -1,108 +1,145 @@
 # IC COLLECT
 
-Projeto desenvolvido para automatizar a análise de um barema de Iniciação Científica (IC) a partir dos dados do currículo Lattes.
+Projeto para coletar dados públicos do currículo Lattes e calcular o barema docente de seleção de bolsas de Iniciação Científica.
 
 ## Objetivo
 
-O sistema tem como objetivo coletar informações do currículo Lattes de um docente, tratar esses dados e calcular automaticamente a pontuação do barema de seleção de bolsas de IC.
+O sistema recebe a URL de um currículo Lattes, consulta os dados públicos disponíveis no Buscatextual, organiza os indicadores encontrados e calcula automaticamente a pontuação do barema docente.
 
-## O que já foi feito
+## Estado atual
 
-Atualmente, o projeto já possui a etapa inicial de coleta implementada.
+Atualmente o projeto já possui:
 
-### API
+- API HTTP local em Python
+- página web integrada à API
+- coleta do código interno do Lattes
+- coleta do HTML de preview
+- coleta do HTML de índices de produção
+- extração das séries bibliográficas por ano
+- cálculo inicial do barema docente
 
-Na pasta [API](API), já foi desenvolvido o fluxo básico de consulta:
-
-- [main.py](API/main.py): recebe a URL do currículo Lattes por entrada do usuário
-- [controller.py](API/controller.py): intermedia a chamada entre a entrada e o serviço
-- [service.py](API/service.py): faz a requisição ao Lattes, obtém o código interno do currículo e coleta o conteúdo HTML das páginas principais
-
-### Coleta atual
-
-Até o momento, o sistema já consegue:
-
-- receber a URL do currículo Lattes
-- normalizar a URL para evitar falhas com HTTPS
-- buscar o código interno do currículo na plataforma Lattes
-- baixar o conteúdo HTML da página de preview
-- baixar o conteúdo HTML da página de índices
-- exibir esse conteúdo na tela
-
-## Próximos passos
-
-As próximas etapas do projeto são:
-
-- tratamento dos dados coletados
-- armazenamento das informações no banco de dados em [DB](DB)
-- automação do cálculo do barema
-- desenvolvimento da página web no front-end em [SPA](SPA)
-
-## Barema a ser automatizado
-
-## BAREMA PARA SELEÇÃO DE BOLSAS
-## (PIBIC/CNPq, PIBIC-Af/CNPq, PIBIC/FAPESB e PROBIC/UEFS)
-
-### A – DOCENTE
-
-#### I – Titulação
-
-Considerar somente a titulação máxima.
-
-| Critério | Pontuação por item | Pontuação Máxima |
-| :--- | :---: | :---: |
-| Doutorado | 12 | 12 |
-| Mestrado | 08 | 08 |
-| **Subtotal (máximo a ser considerado: 12)** | | |
-
-#### II – Produção
-
-Considerar somente a produção a partir de 2021.
-
-| Critério | Pontuação por item | Pontuação Máxima |
-| :--- | :---: | :---: |
-| Artigo completo publicado em periódico | 03 | Sem limites |
-| Livro | 03 | Sem limites |
-| Capítulo de livro | 02 | Sem limites |
-| Resumo publicado em periódico | 1,5 | Sem limites |
-| Resumo e trabalho publicado em Anais de evento | 01 | Sem limites |
-| Outras produções bibliográficas | 01 | Sem limites |
-| Patente | 03 | Sem limites |
-| Produção artística/cultural (artes cênicas, música, artes visuais e outras produções) | 03 | Sem limites |
-| Trabalho Técnico | 01 | Sem limites |
-| **Subtotal (máximo a ser considerado: 30)** | | |
-
-#### III – Formação de recursos humanos
-
-Considerar somente orientações concluídas a partir de 2021.
-
-| Critério | Pontuação por item | Pontuação Máxima |
-| :--- | :---: | :---: |
-| Doutorado (orientador) | 1,5 | Sem limites |
-| Mestrado (orientador) | 1,0 | Sem limites |
-| IC, IT, TCC, Especialização, PIBID, PIBEX, PET, Monitoria | 0,5 | Sem limites |
-| **Subtotal (máximo a ser considerado: 12)** | | |
-
-#### IV – Participação em eventos/comitê
-
-Considerar somente a participação a partir de 2021.
-
-| Critério | Pontuação por item | Pontuação Máxima |
-| :--- | :---: | :---: |
-| Apresentação de trabalho | 0,5 | sem limite |
-| **Subtotal (máximo a ser considerado: 06)** | | |
-
-**TOTAL A - DOCENTE (máximo a ser considerado: 60)**
-
-## Estrutura atual
+## Estrutura do projeto
 
 ```text
 IC_COLLECT/
 ├── API/
+│   ├── main.py
+│   ├── controller.py
+│   └── service.py
 ├── DB/
-└── SPA/
+├── SPA/
+│   ├── index.html
+│   ├── app.js
+│   └── styles.css
+└── README.md
 ```
 
-## Resumo do andamento
+## Componentes principais
 
-O projeto já realiza a coleta inicial do conteúdo do Lattes, mas ainda precisa evoluir para transformar esse conteúdo em dados estruturados, persistir os resultados, calcular automaticamente o barema e disponibilizar uma interface web para uso final.
+### Backend
+
+- [API/main.py](API/main.py): inicia o servidor HTTP local, entrega a SPA e expõe o endpoint `/api/lattes`
+- [API/controller.py](API/controller.py): armazena o resultado da coleta e calcula o barema
+- [API/service.py](API/service.py): consulta o Lattes, normaliza a URL, obtém o código interno e coleta os HTMLs necessários
+
+### Frontend
+
+- [SPA/index.html](SPA/index.html): estrutura da página
+- [SPA/app.js](SPA/app.js): integração com a API e renderização dos resultados
+- [SPA/styles.css](SPA/styles.css): estilos da interface
+
+## Como executar
+
+Na pasta [API](API), execute:
+
+```bash
+python3 main.py
+```
+
+Depois abra no navegador:
+
+```text
+http://127.0.0.1:8000
+```
+
+## Endpoint disponível
+
+### `POST /api/lattes`
+
+Recebe um JSON com a URL do currículo:
+
+```json
+{
+	"url": "https://lattes.cnpq.br/1431810842888468"
+}
+```
+
+Retorna um JSON com:
+
+- status da coleta
+- URL normalizada
+- código interno do currículo
+- HTML de preview
+- HTML de índices
+- publicações agregadas por ano
+- barema calculado
+
+## O que já é calculado no barema
+
+O cálculo atual contempla a estrutura abaixo:
+
+### I - Titulação
+
+- Doutorado: 12
+- Mestrado: 8
+
+### II - Produção
+
+- Artigo completo publicado em periódico
+- Livro
+- Capítulo de livro
+- Resumo publicado em periódico
+- Resumo e trabalho publicado em anais de evento
+- Outras produções bibliográficas
+- Patente
+- Produção artística/cultural
+- Trabalho técnico
+
+### III - Formação de recursos humanos
+
+- Doutorado
+- Mestrado
+- IC, IT, TCC, Especialização, PIBID, PIBEX, PET e Monitoria
+
+### IV - Participação em eventos/comitê
+
+- Apresentação de trabalho
+
+## Regra de período
+
+O projeto não usa mais um ano fixo como 2021.
+
+O barema considera dinamicamente os últimos 5 anos a partir do ano vigente:
+
+$$ano\_minimo = ano\_atual - 5$$
+
+Exemplo:
+
+- em 2026, o período considerado começa em 2021
+- em 2027, o período considerado começa em 2022
+
+Essa regra é usada tanto no backend quanto na interface web.
+
+## Limitações atuais
+
+- algumas informações do Lattes não aparecem de forma estruturada nos HTMLs coletados
+- a detecção de titulação ainda depende de texto disponível no conteúdo retornado
+- a contagem de patentes depende da presença da seção correspondente no HTML acessível
+- orientações concluídas e outras categorias podem ficar zeradas quando o índice público não expõe os dados de forma identificável
+
+## Próximos passos
+
+- melhorar a extração de titulação, orientações e patentes
+- estruturar melhor os dados retornados pela API
+- persistir resultados em [DB](DB)
+- refinar a interface e a apresentação do barema
