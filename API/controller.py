@@ -3,6 +3,7 @@ import re
 from datetime import date
 from html import unescape
 
+from database import registrar_barema, registrar_consulta
 from service import getLattesCode, getLattesIndexHtml, getLattesPViewHtml
 
 
@@ -218,6 +219,19 @@ def _calcular_titulacao(preview_html):
 		return "Mestrado", 8
 
 	return "Não identificado", 0
+
+
+def _extrair_nome_pessoa(preview_html):
+	if not preview_html:
+		return None
+
+	match = re.search(r"var\s+nome\s*=\s*'([^']+)'", preview_html, re.IGNORECASE)
+	if match:
+		return unescape(match.group(1)).strip()
+
+	texto = unescape(re.sub(r"<[^>]+>", " ", preview_html))
+	texto = re.sub(r"\s+", " ", texto).strip()
+	return texto[:255] if texto else None
 
 
 def _contar_itens_numerados_secao(html, titulo_secao):
@@ -463,14 +477,17 @@ def buscaLattes(url):
 		}
 		conteudo = getConteudo(resultado)
 		conteudo["barema"] = calcularBarema()
+		registrar_consulta(url, conteudo)
 		return conteudo
 
 	preview_html = getLattesPViewHtml(code)
 	index_html = getLattesIndexHtml(code)
+	nome = _extrair_nome_pessoa(preview_html)
 	resultado = {
 		"success": bool(index_html),
 		"url": url,
 		"code": code,
+		"nome": nome,
 		"preview_html": preview_html,
 		"index_html": index_html,
 		"publicacoes": extract_publications(index_html),
@@ -479,4 +496,6 @@ def buscaLattes(url):
 
 	conteudo = getConteudo(resultado)
 	conteudo["barema"] = calcularBarema()
+	consulta_id = registrar_consulta(url, conteudo)
+	registrar_barema(consulta_id, conteudo.get("code"), conteudo.get("nome"), conteudo.get("barema"))
 	return conteudo

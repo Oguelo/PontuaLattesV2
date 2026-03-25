@@ -1,10 +1,14 @@
-# IC COLLECT
+# Barema Automático - IC
 
-Projeto para coletar dados públicos do currículo Lattes e calcular o barema docente de seleção de bolsas de Iniciação Científica.
+Projeto de extensão desenvolvido na disciplina EXA618: Programação para Redes, da Universidade Estadual de Feira de Santana (UEFS), para apoiar o cálculo da pontuação de candidatos às bolsas de Iniciação Científica.
+
+- Edital IC UEFS 2026: http://www.pppg.uefs.br/arquivos/File/editais/IC/2026/Edital_IC_UEFS_2026.pdf
+- Repositório: https://github.com/argalvao/IC_COLLECT
+- Desenvolvedores: Abel Galvão, Alex Júnior e Bruno Camposo
 
 ## Objetivo
 
-O sistema recebe a URL de um currículo Lattes, consulta os dados públicos disponíveis no Buscatextual, organiza os indicadores encontrados e calcula automaticamente a pontuação do barema docente.
+O sistema recebe a URL completa ou o código público de um currículo Lattes, consulta os dados públicos disponíveis no Buscatextual, organiza os indicadores encontrados e calcula automaticamente a pontuação do barema.
 
 ## Estado atual
 
@@ -12,21 +16,25 @@ Atualmente o projeto já possui:
 
 - API HTTP local em Python
 - página web integrada à API
+- suporte à consulta por URL completa ou código público do Lattes
 - coleta do código interno do Lattes
 - coleta do HTML de preview
 - coleta do HTML de índices de produção
 - extração das séries bibliográficas por ano
-- cálculo inicial do barema docente
+- cálculo do barema com período dinâmico dos últimos 5 anos
+- persistência em SQLite para consultas e baremas
 
 ## Estrutura do projeto
 
 ```text
 IC_COLLECT/
 ├── API/
+│   ├── database.py
 │   ├── main.py
 │   ├── controller.py
 │   └── service.py
 ├── DB/
+│   └── database.db
 ├── SPA/
 │   ├── index.html
 │   ├── app.js
@@ -39,8 +47,9 @@ IC_COLLECT/
 ### Backend
 
 - [API/main.py](API/main.py): inicia o servidor HTTP local, entrega a SPA e expõe o endpoint `/api/lattes`
-- [API/controller.py](API/controller.py): armazena o resultado da coleta e calcula o barema
-- [API/service.py](API/service.py): consulta o Lattes, normaliza a URL, obtém o código interno e coleta os HTMLs necessários
+- [API/controller.py](API/controller.py): organiza o resultado da coleta, extrai publicações, calcula o barema e aciona a persistência
+- [API/service.py](API/service.py): consulta o Lattes, aceita URL ou código público, obtém o código interno e coleta os HTMLs necessários
+- [API/database.py](API/database.py): inicializa o banco SQLite e grava as tabelas `consultas` e `barema`
 
 ### Frontend
 
@@ -64,7 +73,7 @@ Para rodar o projeto completo localmente, é necessário ter:
 
 ### Bibliotecas Python utilizadas
 
-O backend usa apenas bibliotecas padrão do Python e a biblioteca `requests`.
+O backend usa bibliotecas padrão do Python, SQLite nativo (`sqlite3`) e a biblioteca `requests`.
 
 Dependências necessárias:
 
@@ -93,7 +102,7 @@ Para funcionar corretamente, o projeto espera esta organização:
 
 - [API](API) com os arquivos do backend
 - [SPA](SPA) com `index.html`, `app.js` e `styles.css`
-- [DB](DB), mesmo que ainda não esteja em uso
+- [DB](DB) para armazenar o arquivo SQLite `database.db`
 
 ### Observação importante
 
@@ -117,7 +126,7 @@ http://127.0.0.1:8000
 
 ### `POST /api/lattes`
 
-Recebe um JSON com a URL do currículo:
+Recebe um JSON com a URL completa ou o código público do currículo:
 
 ```json
 {
@@ -125,11 +134,20 @@ Recebe um JSON com a URL do currículo:
 }
 ```
 
+Também aceita:
+
+```json
+{
+	"url": "1431810842888468"
+}
+```
+
 Retorna um JSON com:
 
 - status da coleta
-- URL normalizada
+- URL consultada
 - código interno do currículo
+- nome da pessoa retornada pelo Lattes
 - HTML de preview
 - HTML de índices
 - publicações agregadas por ano
@@ -181,16 +199,54 @@ Exemplo:
 
 Essa regra é usada tanto no backend quanto na interface web.
 
+## Persistência em banco de dados
+
+O projeto grava os dados em SQLite no arquivo [DB/database.db](DB/database.db).
+
+### Tabela `consultas`
+
+Registra todas as consultas feitas pela aplicação.
+
+Campos principais:
+
+- `id`
+- `url_informada`
+- `url_consultada`
+- `code`
+- `success`
+- `message`
+- `created_at`
+
+### Tabela `barema`
+
+Registra o barema associado à última consulta realizada para cada `code`.
+
+Campos principais:
+
+- `consulta_id`
+- `code`
+- `nome`
+- subtotais bruto e limitado por seção
+- `total_bruto`
+- `total_limitado`
+- `barema_json`
+- `updated_at`
+
+Relacionamento:
+
+- `barema.consulta_id` referencia `consultas.id`
+- o vínculo lógico principal entre os resultados também é feito pelo `code`
+
 ## Limitações atuais
 
 - algumas informações do Lattes não aparecem de forma estruturada nos HTMLs coletados
 - a detecção de titulação ainda depende de texto disponível no conteúdo retornado
-- a contagem de patentes depende da presença da seção correspondente no HTML acessível
-- orientações concluídas e outras categorias podem ficar zeradas quando o índice público não expõe os dados de forma identificável
+- a extração do nome depende do conteúdo retornado no HTML de preview
+- alguns indicadores públicos do Lattes podem variar conforme mudanças no Buscatextual
 
 ## Próximos passos
 
-- melhorar a extração de titulação, orientações e patentes
-- estruturar melhor os dados retornados pela API
-- persistir resultados em [DB](DB)
+- criar rotas para consulta do histórico salvo em SQLite
+- permitir listagem de consultas e baremas por `code`
 - refinar a interface e a apresentação do barema
+- ampliar a documentação do esquema do banco e dos endpoints

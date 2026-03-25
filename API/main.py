@@ -5,6 +5,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from controller import buscaLattes
+from database import init_database
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -102,6 +103,7 @@ class ICCollectHandler(BaseHTTPRequestHandler):
 
 
 def run():
+    init_database()
     server = ThreadingHTTPServer((HOST, PORT), ICCollectHandler)
     print(f"Servidor disponível em http://{HOST}:{PORT}")
     server.serve_forever()
