@@ -5,6 +5,9 @@ document.addEventListener("DOMContentLoaded", () => {
 let graficoNomes;
 let graficoDia;
 let graficoStatus;
+let paginaAtual = 1;
+const itensPorPagina = 10;
+let todasConsultas = [];
 
 async function carregarDashboard() {
     const response = await fetch("http://127.0.0.1:8000/api/consultas");
@@ -12,14 +15,15 @@ async function carregarDashboard() {
 
     if (!dados.success) return;
 
-    const consultas = dados.consultas;
+    todasConsultas = dados.consultas;
 
-    preencherResumo(consultas);
-    criarGraficoPorDia(consultas);
-    criarGraficoStatus(consultas);
-    preencherTopUrls(consultas);
-    preencherTabela(consultas);
+    preencherResumo(todasConsultas);
+    criarGraficoPorDia(todasConsultas);
+    criarGraficoStatus(todasConsultas);
+    preencherTopUrls(todasConsultas);
     atualizarGraficoNomes();
+
+    renderizarTabela(); 
 }
 
 function preencherResumo(consultas) {
@@ -32,6 +36,27 @@ function preencherResumo(consultas) {
     document.getElementById("total-sucessos").textContent = sucessos;
     document.getElementById("total-falhas").textContent = falhas;
     document.getElementById("taxa-sucesso").textContent = taxa + "%";
+}
+
+function renderizarTabela() {
+    const inicio = (paginaAtual - 1) * itensPorPagina;
+    const fim = inicio + itensPorPagina;
+
+    const pagina = todasConsultas.slice(inicio, fim);
+
+    document.getElementById("tabela-consultas").innerHTML =
+        pagina.map(c => `
+            <tr>
+                <td>${c.id}</td>
+                <td>${c.nome || "-"}</td> 
+                <td>${c.url_informada}</td>
+                <td>${c.code}</td>
+                <td>${c.success === 1 ? "✅" : "❌"}</td>
+                <td>${c.created_at}</td>
+            </tr>
+        `).join("");
+
+    renderizarControles();
 }
 
 function criarGraficoPorDia(consultas) {
@@ -132,16 +157,57 @@ async function atualizarGraficoNomes() {
     graficoNomes.update();
 }
 
-function preencherTabela(consultas) {
-    document.getElementById("tabela-consultas").innerHTML =
-        consultas.map(c => `
-            <tr>
-                <td>${c.id}</td>
-                <td>${c.nome || "-"}</td> 
-                <td>${c.url_informada}</td>
-                <td>${c.code}</td>
-                <td>${c.success === 1 ? "✅" : "❌"}</td>
-                <td>${c.created_at}</td>
-            </tr>
-        `).join("");
+function renderizarControles() {
+    const totalPaginas = Math.ceil(todasConsultas.length / itensPorPagina);
+    const container = document.getElementById("paginacao");
+
+    if (totalPaginas <= 1) {
+        container.innerHTML = "";
+        return;
+    }
+
+    let html = `<div class="pagination">`;
+
+    // Botão anterior
+    html += `
+        <button 
+            class="page-btn ${paginaAtual === 1 ? "disabled" : ""}" 
+            onclick="mudarPagina(${paginaAtual - 1})"
+            ${paginaAtual === 1 ? "disabled" : ""}
+        >
+            ‹
+        </button>
+    `;
+
+    // Números das páginas
+    for (let i = 1; i <= totalPaginas; i++) {
+        html += `
+            <button 
+                class="page-btn ${i === paginaAtual ? "active" : ""}"
+                onclick="mudarPagina(${i})"
+            >
+                ${i}
+            </button>
+        `;
+    }
+
+    // Botão próxima
+    html += `
+        <button 
+            class="page-btn ${paginaAtual === totalPaginas ? "disabled" : ""}" 
+            onclick="mudarPagina(${paginaAtual + 1})"
+            ${paginaAtual === totalPaginas ? "disabled" : ""}
+        >
+            ›
+        </button>
+    `;
+
+    html += `</div>`;
+
+    container.innerHTML = html;
+}
+
+function mudarPagina(novaPagina) {
+    paginaAtual = novaPagina;
+    renderizarTabela();
 }
