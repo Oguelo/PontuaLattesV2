@@ -89,7 +89,7 @@ class ICCollectHandler(BaseHTTPRequestHandler):
             self._send_json(
                 {
                     "success": False,
-                    "message": "Informe a URL do currículo Lattes.",
+                    "message": "Informe a URL completa ou o código do currículo Lattes.",
                     "code": None,
                 },
                 HTTPStatus.BAD_REQUEST,

@@ -20,6 +20,12 @@ def _normalizar_url(Url):
 	if not Url:
 		return Url
 
+	if re.fullmatch(r"\d+", Url):
+		return f"http://lattes.cnpq.br/{Url}"
+
+	if re.match(r"^lattes\.cnpq\.br/\d+$", Url, re.IGNORECASE):
+		return f"http://{Url}"
+
 	if not re.match(r"^https?://", Url, re.IGNORECASE):
 		return f"https://{Url}"
 

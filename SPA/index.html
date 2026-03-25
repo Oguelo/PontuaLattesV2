@@ -3,35 +3,67 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>IC Collect</title>
+	<title>Barema Automático - IC</title>
 	<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 	<main class="page">
 		<section class="hero">
-			<h1>IC Collect</h1>
-			<p>
-				Informe a URL de um currículo Lattes para realizar a coleta de dados.
+			<span class="hero-badge">Projeto de extensão • UEFS</span>
+			<h1>Barema Automático - IC</h1>
+			<p class="hero-lead">
+				Projeto desenvolvido na disciplina EXA618: Programação para Redes da Universidade Estadual de Feira de Santana.
 			</p>
+			<p>
+				A proposta é auxiliar no cálculo da pontuação dos candidatos às bolsas de Iniciação Científica a partir da análise do currículo Lattes e da consolidação automática do barema.
+			</p>
+			<div class="hero-meta">
+				<a class="hero-link" href="http://www.pppg.uefs.br/arquivos/File/editais/IC/2026/Edital_IC_UEFS_2026.pdf" target="_blank" rel="noopener noreferrer">
+					Ver edital IC UEFS 2026
+				</a>
+			</div>
+		</section>
+
+		<section class="panel info-panel">
+			<div class="info-grid">
+				<article class="info-card">
+					<h2>Objetivo</h2>
+					<p>
+						Facilitar a conferência de produção acadêmica e apoiar a estimativa da pontuação exigida no processo seletivo de bolsas de IC.
+					</p>
+				</article>
+				<article class="info-card">
+					<h2>Contexto</h2>
+					<p>
+						A aplicação consulta dados públicos do currículo Lattes, organiza os indicadores mais relevantes e apresenta o barema de forma clara.
+					</p>
+				</article>
+				<article class="info-card">
+					<h2>Edital</h2>
+					<p>
+						O cálculo deve ser interpretado em conjunto com as regras oficiais do edital vigente da UEFS para bolsas de IC.
+					</p>
+				</article>
+			</div>
 		</section>
 
 		<section class="panel form-panel">
 			<form id="lattes-form">
 				<div>
-					<label for="lattes-url">URL do currículo Lattes</label>
+					<label for="lattes-url">URL completa ou código do currículo Lattes</label>
 					<div class="input-row">
 						<input
 							id="lattes-url"
 							name="url"
-							type="url"
-							placeholder="https://lattes.cnpq.br/1431810842888468"
+							type="text"
+							placeholder="https://lattes.cnpq.br/6304377549101792 ou 6304377549101792"
 							required
 						>
 						<button id="submit-button" type="submit">Consultar</button>
 					</div>
 				</div>
 				<p class="helper-text">
-					A página envia a URL para a consulta do currículo Lattes.
+					Informe a URL completa do currículo ou apenas o código público do Lattes. Ex.: http://lattes.cnpq.br/6304377549101792 ou 6304377549101792.
 				</p>
 				<div id="status" class="status" aria-live="polite"></div>
 			</form>
@@ -69,6 +101,23 @@
 				<div id="barema-observations" class="barema-observations"></div>
 			</article>
 		</section>
+
+		<footer class="footer panel">
+			<div class="footer-grid">
+				<div>
+					<h2>Repositório</h2>
+					<p>
+						<a href="https://github.com/argalvao/IC_COLLECT" target="_blank" rel="noopener noreferrer">
+							GitHub - IC_COLLECT
+						</a>
+					</p>
+				</div>
+				<div>
+					<h2>Desenvolvedores</h2>
+					<p>Abel Galvão, Alex Júnior e Bruno Camposo</p>
+				</div>
+			</div>
+		</footer>
 	</main>
 	<script src="/app.js" defer></script>
 </body>

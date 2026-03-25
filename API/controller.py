@@ -108,10 +108,11 @@ def _indices_validos_anos(anos, ano_minimo):
 
 def extract_publications(index_html):
 	if not index_html:
-		return {"anos": [], "series": [], "anos_desde_2021": [], "series_desde_2021": [], "total_geral": 0}
+		return {"anos": [], "series": [], "anos_ultimos_5_anos": [], "series_ultimos_5_anos": [], "total_geral": 0}
 
 	variaveis_js = _extrair_variaveis_js(index_html)
 	years = _normalizar_anos(variaveis_js.get("barraAnosProducoesBibliograficas") or [])
+	ano_minimo_periodo = _obter_ano_minimo_barema()
 	labels = {
 		"valoresArtigosPublicadosPeriodicos": "Artigos completos publicados em periódicos",
 		"valoresArtigosResumidosPublicadosPeriodicos": "Resumos publicados em periódicos",
@@ -137,29 +138,33 @@ def extract_publications(index_html):
 			"total": total,
 		})
 
-	years_since_2021 = [year for year in years if str(year).isdigit() and int(year) >= 2021]
-	start_index = len(years) - len(years_since_2021)
+	years_last_five_years = [
+		year
+		for year in years
+		if str(year).isdigit() and int(year) >= ano_minimo_periodo
+	]
+	start_index = len(years) - len(years_last_five_years)
 
-	series_since_2021 = []
+	series_last_five_years = []
 	for item in series:
-		values_since_2021 = item["valores"][start_index:] if years_since_2021 else []
-		total_since_2021 = sum(values_since_2021)
+		values_last_five_years = item["valores"][start_index:] if years_last_five_years else []
+		total_last_five_years = sum(values_last_five_years)
 
-		if total_since_2021 == 0:
+		if total_last_five_years == 0:
 			continue
 
-		series_since_2021.append({
+		series_last_five_years.append({
 			"nome": item["nome"],
-			"valores": values_since_2021,
-			"por_ano": dict(zip(years_since_2021, values_since_2021)),
-			"total": total_since_2021,
+			"valores": values_last_five_years,
+			"por_ano": dict(zip(years_last_five_years, values_last_five_years)),
+			"total": total_last_five_years,
 		})
 
 	return {
 		"anos": years,
 		"series": series,
-		"anos_desde_2021": years_since_2021,
-		"series_desde_2021": series_since_2021,
+		"anos_ultimos_5_anos": years_last_five_years,
+		"series_ultimos_5_anos": series_last_five_years,
 		"total_geral": sum(item["total"] for item in series),
 	}
 
@@ -381,6 +386,7 @@ def calcularBarema(resultado=None):
 	}
 	producao_bruta = _normalizar_pontuacao(sum(item["pontos"] for item in producao_itens.values()))
 	producao_limitada = min(producao_bruta, 30)
+	titulacao_limitada = min(pontos_titulacao, 12)
 
 	formacao_itens = {
 		"Doutorado (orientador)": _detalhar_item(quantidade_orientacao_doutorado, 1.5),
@@ -400,7 +406,9 @@ def calcularBarema(resultado=None):
 	eventos_limitado = min(eventos_bruto, 6)
 
 	total_bruto = _normalizar_pontuacao(pontos_titulacao + producao_bruta + formacao_bruta + eventos_bruto)
-	total_limitado = min(total_bruto, 60)
+	total_limitado = _normalizar_pontuacao(
+		titulacao_limitada + producao_limitada + formacao_limitada + eventos_limitado
+	)
 
 	observacoes = []
 	if pontos_titulacao == 0:
@@ -416,7 +424,7 @@ def calcularBarema(resultado=None):
 		"titulacao": {
 			"nivel_maximo": nivel_titulacao,
 			"subtotal_bruto": _normalizar_pontuacao(pontos_titulacao),
-			"subtotal_limitado": min(pontos_titulacao, 12),
+			"subtotal_limitado": titulacao_limitada,
 		},
 		"producao": {
 			"itens": producao_itens,
@@ -450,7 +458,7 @@ def buscaLattes(url):
 			"code": code,
 			"preview_html": None,
 			"index_html": None,
-			"publicacoes": {"anos": [], "series": [], "anos_desde_2021": [], "series_desde_2021": [], "total_geral": 0},
+			"publicacoes": {"anos": [], "series": [], "anos_ultimos_5_anos": [], "series_ultimos_5_anos": [], "total_geral": 0},
 			"message": "Não foi possível encontrar o código interno do currículo.",
 		}
 		conteudo = getConteudo(resultado)

@@ -74,11 +74,9 @@ function renderSummary(resultado, previewHtml) {
 
 	const itens = [
 		['Nome', pesquisador],
-		['URL consultada', resultado.url || '-'],
 		['Código Lattes', resultado.code || '-'],
-		['Anos encontrados', anosLimpos.join(', ') || 'Nenhum'],
 		[
-			`Anos desde ${anoMinimo}`,
+			`Últimos anos (>= ${anoMinimo})`,
 			anosLimpos
 				.filter(ano => Number(ano) >= anoMinimo)
 				.join(', ') || 'Nenhum',
@@ -123,7 +121,7 @@ function formatNumber(value) {
 	});
 }
 
-function renderBaremaSection(title, section) {
+function renderBaremaSection(title, section, maximumAllowedLabel) {
 	const itens = Object.entries(section.itens || {});
 
 	return `
@@ -131,8 +129,8 @@ function renderBaremaSection(title, section) {
 			<div class="barema-card-header">
 				<h3>${title}</h3>
 				<div class="barema-card-total">
-					<span>Bruto: ${formatNumber(section.subtotal_bruto)}</span>
-					<span>Limitado: ${formatNumber(section.subtotal_limitado)}</span>
+					<span>Pontuação encontrada: ${formatNumber(section.subtotal_bruto)}</span>
+					<span>Máximo permitido: ${maximumAllowedLabel}</span>
 				</div>
 			</div>
 			${itens.length ? `
@@ -161,6 +159,36 @@ function renderBaremaSection(title, section) {
 			` : '<p class="barema-empty">Sem itens detalhados.</p>'}
 		</div>
 	`;
+}
+
+function getMaximumAllowedLabel(title, titulacao) {
+	if (title === 'I - Titulação') {
+		const nivelMaximo = titulacao?.nivel_maximo || 'Não identificado';
+
+		if (nivelMaximo === 'Doutorado') {
+			return '12';
+		}
+
+		if (nivelMaximo === 'Mestrado') {
+			return '8';
+		}
+
+		return '12 (Doutorado) ou 8 (Mestrado)';
+	}
+
+	if (title === 'II - Produção') {
+		return '30';
+	}
+
+	if (title === 'III - Formação de recursos humanos') {
+		return '12';
+	}
+
+	if (title === 'IV - Participação em eventos/comitê') {
+		return '6';
+	}
+
+	return '-';
 }
 
 function buildTitulationSection(titulacao) {
@@ -223,10 +251,26 @@ function renderBarema(barema) {
 	`;
 
 	baremaSections.innerHTML = [
-		renderBaremaSection('I - Titulação', buildTitulationSection(barema.titulacao || {})),
-		renderBaremaSection('II - Produção', barema.producao || {}),
-		renderBaremaSection('III - Formação de recursos humanos', barema.formacao_recursos_humanos || {}),
-		renderBaremaSection('IV - Participação em eventos/comitê', barema.participacao_eventos_comite || {}),
+		renderBaremaSection(
+			'I - Titulação',
+			buildTitulationSection(barema.titulacao || {}),
+			getMaximumAllowedLabel('I - Titulação', barema.titulacao || {}),
+		),
+		renderBaremaSection(
+			'II - Produção',
+			barema.producao || {},
+			getMaximumAllowedLabel('II - Produção', barema.titulacao || {}),
+		),
+		renderBaremaSection(
+			'III - Formação de recursos humanos',
+			barema.formacao_recursos_humanos || {},
+			getMaximumAllowedLabel('III - Formação de recursos humanos', barema.titulacao || {}),
+		),
+		renderBaremaSection(
+			'IV - Participação em eventos/comitê',
+			barema.participacao_eventos_comite || {},
+			getMaximumAllowedLabel('IV - Participação em eventos/comitê', barema.titulacao || {}),
+		),
 	].join('');
 
 	const observacoes = barema.observacoes || [];
@@ -246,7 +290,7 @@ form.addEventListener('submit', async (event) => {
 
 	const url = document.getElementById('lattes-url').value.trim();
 	if (!url) {
-		setStatus('error', 'Informe a URL do currículo Lattes.');
+		setStatus('error', 'Informe a URL completa ou o código do currículo Lattes.');
 		return;
 	}
 
