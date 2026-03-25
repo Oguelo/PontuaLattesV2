@@ -131,35 +131,43 @@ def registrar_consulta(url_informada, resultado):
 def get_all_consultas(start_date=None, end_date=None, success=None):
   
     init_database()
+
     query = """
-        SELECT id, url_informada, url_consultada, code, success, message, created_at
-        FROM consultas
+        SELECT 
+            c.id,
+            c.url_informada,
+            c.url_consultada,
+            c.code,
+            c.success,
+            c.message,
+            c.created_at,
+            b.nome
+        FROM consultas c
+        LEFT JOIN barema b ON c.code = b.code
         WHERE 1=1
     """
     params = []
 
     if start_date:
-        query += " AND date(created_at) >= date(?)"
+        query += " AND date(c.created_at) >= date(?)"
         params.append(start_date)
 
     if end_date:
-        query += " AND date(created_at) <= date(?)"
+        query += " AND date(c.created_at) <= date(?)"
         params.append(end_date)
 
     if success is not None:
-        query += " AND success = ?"
+        query += " AND c.success = ?"
         params.append(int(success))
 
-    query += " ORDER BY created_at DESC"
+    query += " ORDER BY c.created_at DESC"
 
     with _get_connection() as connection:
         connection.execute("PRAGMA foreign_keys = ON")
         cursor = connection.execute(query, params)
         rows = cursor.fetchall()
 
-    # transforma em lista de dicionários
     return [dict(row) for row in rows]
-
 
 
 def registrar_barema(consulta_id, code, nome, barema_resultado):

@@ -4,7 +4,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
-from database import get_all_consultas, get_consultas_por_nome
+from database import get_all_consultas
 from pathlib import Path
 
 
@@ -77,12 +77,6 @@ class ICCollectHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/health":
             self._send_json({"status": "ok"})
-            return
-        
-        if self.path == "/api/grafico-nomes":
-            dados = get_consultas_por_nome()
-            print(dados)
-            self._send_json({"success": True, "dados": dados})
             return
         
         if self.path.startswith("/api/consultas"):
