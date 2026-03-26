@@ -127,7 +127,7 @@ class ICCollectHandler(BaseHTTPRequestHandler):
             if create_user(username, password):
                 self._send_json({"success": True, "message": "Usuário registado com sucesso!"})
             else:
-                self._send_json({"success": False, "message": "O utilizador já existe."}, HTTPStatus.CONFLICT)
+                self._send_json({"success": False, "message": "O usuário já existe."}, HTTPStatus.CONFLICT)
             return
 
    
@@ -140,7 +140,7 @@ class ICCollectHandler(BaseHTTPRequestHandler):
             if token:
                 self._send_json({"success": True, "token": token, "message": "Login efetuado com sucesso."})
             else:
-                self._send_json({"success": False, "message": "Utilizador ou palavra-passe inválidos."}, HTTPStatus.UNAUTHORIZED)
+                self._send_json({"success": False, "message": "Usuário ou senha inválidos!"}, HTTPStatus.UNAUTHORIZED)
             return
 
        
@@ -179,8 +179,10 @@ class ICCollectHandler(BaseHTTPRequestHandler):
         self._send_json({"success": False, "message": "Rota não encontrada."}, HTTPStatus.NOT_FOUND)
 def run():
     init_database()
-    server = ThreadingHTTPServer((HOST, PORT), ICCollectHandler)
-    print(f"Servidor disponível em http://{HOST}:{PORT}")
+    host = os.getenv("HOST", HOST)
+    port = int(os.getenv("PORT", str(PORT)))
+    server = ThreadingHTTPServer((host, port), ICCollectHandler)
+    print(f"Servidor disponível em http://{host}:{port}")
     server.serve_forever()
 
 
