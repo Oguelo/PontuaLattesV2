@@ -1,4 +1,5 @@
 import re
+from urllib.parse import urlparse
 
 import requests
 
@@ -15,10 +16,33 @@ DEFAULT_HEADERS = {
 }
 
 
+def _extrair_codigo_publico(url):
+	url = str(url or "").strip()
+	if not url:
+		return None
+
+	if re.fullmatch(r"\d+", url):
+		return url
+
+	url_parse = url if re.match(r"^https?://", url, re.IGNORECASE) else f"https://{url}"
+	parsed = urlparse(url_parse)
+	host = (parsed.netloc or "").lower()
+	path = (parsed.path or "").strip("/")
+
+	if host.endswith("lattes.cnpq.br") and re.fullmatch(r"\d+", path):
+		return path
+
+	return None
+
+
 def _normalizar_url(Url):
 	Url = str(Url or "").strip()
 	if not Url:
 		return Url
+
+	codigo_publico = _extrair_codigo_publico(Url)
+	if codigo_publico:
+		return f"http://lattes.cnpq.br/{codigo_publico}"
 
 	if re.fullmatch(r"\d+", Url):
 		return f"http://lattes.cnpq.br/{Url}"
