@@ -1,122 +1,208 @@
 # Barema Automático - IC
 
-Projeto de extensão desenvolvido na disciplina EXA618: Programação para Redes, da Universidade Estadual de Feira de Santana (UEFS), para apoiar o cálculo da pontuação de candidatos às bolsas de Iniciação Científica.
+Projeto de extensão desenvolvido na disciplina EXA618: Programação para Redes, da Universidade Estadual de Feira de Santana (UEFS), com foco na automatização da análise de currículos Lattes e no cálculo do barema para bolsas de Iniciação Científica.
 
 - Edital IC UEFS 2026: http://www.pppg.uefs.br/arquivos/File/editais/IC/2026/Edital_IC_UEFS_2026.pdf
 - Repositório: https://github.com/argalvao/IC_COLLECT
-- Desenvolvedores: Abel Galvão, Alex Júnior e Bruno Camposo
+- Desenvolvedores: Abel Galvão, Alex Júnior e Bruno Campos
 
-## Objetivo
+## Visão geral
 
-O sistema recebe a URL completa ou o código público de um currículo Lattes, consulta os dados públicos disponíveis no Buscatextual, organiza os indicadores encontrados e calcula automaticamente a pontuação do barema.
+O sistema recebe uma URL pública do currículo Lattes ou apenas o código do currículo, consulta os dados públicos disponíveis no CNPq/Buscatextual, extrai indicadores bibliográficos e calcula automaticamente a pontuação do barema docente.
 
-## Estado atual
+Além da coleta e do cálculo, o projeto também oferece:
 
-Atualmente o projeto já possui:
+- autenticação com cadastro, login e logout
+- armazenamento das consultas em SQLite
+- armazenamento do barema consolidado por currículo
+- dashboard com histórico das consultas realizadas
+- interface web integrada ao backend
+- suporte a execução local e deploy no Render
 
-- API HTTP local em Python
-- página web integrada à API
-- suporte à consulta por URL completa ou código público do Lattes
-- coleta do código interno do Lattes
-- coleta do HTML de preview
-- coleta do HTML de índices de produção
-- extração das séries bibliográficas por ano
-- cálculo do barema com período dinâmico dos últimos 5 anos
-- persistência em SQLite para consultas e baremas
+## Funcionalidades atuais
+
+### Coleta e processamento do Lattes
+
+- recebe URL completa ou código público do Lattes
+- normaliza a entrada automaticamente
+- localiza o código interno do currículo
+- coleta o HTML de preview do currículo
+- coleta o HTML de índices/gráficos de produção
+- extrai séries bibliográficas por ano
+- calcula publicações no período dinâmico dos últimos 5 anos
+- calcula o barema completo com limites por seção
+
+### Autenticação
+
+- cadastro de usuário com senha
+- confirmação de senha na interface de cadastro
+- login com geração de token de sessão
+- logout com invalidação da sessão
+- proteção da consulta de Lattes por token
+
+### Persistência e histórico
+
+- grava consultas realizadas
+- grava o barema associado ao currículo consultado
+- mantém nome da pessoa quando identificado
+- lista consultas no dashboard com paginação
+
+### Frontend
+
+- página principal para consulta do currículo
+- página de login
+- página de cadastro
+- dashboard com resumo de consultas
+- visualização do barema por seção
+- visualização das publicações por ano
 
 ## Estrutura do projeto
 
 ```text
 IC_COLLECT/
 ├── API/
+│   ├── controller.py
 │   ├── database.py
 │   ├── main.py
-│   ├── controller.py
 │   └── service.py
 ├── DB/
 │   └── database.db
 ├── SPA/
-│   ├── index.html
 │   ├── app.js
+│   ├── auth.js
+│   ├── cadastro.html
+│   ├── dashboard.html
+│   ├── dashboard.js
+│   ├── index.html
+│   ├── login.html
 │   └── styles.css
+├── requirements.txt
 └── README.md
 ```
+
+## Arquitetura do sistema
+
+O projeto funciona como um serviço Python único que:
+
+1. serve os arquivos estáticos da pasta [SPA](SPA)
+2. expõe endpoints HTTP em [API/main.py](API/main.py)
+3. consulta os dados públicos do Lattes em [API/service.py](API/service.py)
+4. processa publicações e calcula o barema em [API/controller.py](API/controller.py)
+5. persiste dados em SQLite por meio de [API/database.py](API/database.py)
 
 ## Componentes principais
 
 ### Backend
 
-- [API/main.py](API/main.py): inicia o servidor HTTP local, entrega a SPA e expõe o endpoint `/api/lattes`
-- [API/controller.py](API/controller.py): organiza o resultado da coleta, extrai publicações, calcula o barema e aciona a persistência
-- [API/service.py](API/service.py): consulta o Lattes, aceita URL ou código público, obtém o código interno e coleta os HTMLs necessários
-- [API/database.py](API/database.py): inicializa o banco SQLite e grava as tabelas `consultas` e `barema`
+- [API/main.py](API/main.py)
+	- inicia o servidor HTTP
+	- serve a SPA
+	- expõe endpoints de autenticação, consulta e histórico
+	- lê `HOST` e `PORT` do ambiente
+
+- [API/service.py](API/service.py)
+	- normaliza a URL informada
+	- consulta o currículo no Lattes
+	- obtém o código interno do currículo
+	- baixa o HTML de preview e o HTML de índices
+	- utiliza a biblioteca `requests`
+
+- [API/controller.py](API/controller.py)
+	- extrai variáveis JavaScript do HTML de índices
+	- normaliza anos e séries de publicações
+	- calcula publicações por período
+	- calcula pontuação do barema
+	- produz o payload final retornado pela API
+
+- [API/database.py](API/database.py)
+	- inicializa o banco SQLite
+	- cria tabelas e índices
+	- registra consultas
+	- registra baremas
+	- cria usuários
+	- valida login
+	- gerencia sessões por token
 
 ### Frontend
 
-- [SPA/index.html](SPA/index.html): estrutura da página
-- [SPA/app.js](SPA/app.js): integração com a API e renderização dos resultados
-- [SPA/styles.css](SPA/styles.css): estilos da interface
+- [SPA/index.html](SPA/index.html)
+	- página principal da aplicação
+	- formulário para consulta do Lattes
+	- área de exibição do barema e das publicações
 
-## Requisitos para executar o projeto
+- [SPA/app.js](SPA/app.js)
+	- envia a consulta para `/api/lattes`
+	- valida sessão no navegador
+	- renderiza resumo da coleta
+	- renderiza publicações dos últimos 5 anos
+	- renderiza o barema por blocos
+	- faz logout
 
-Para rodar o projeto completo localmente, é necessário ter:
+- [SPA/login.html](SPA/login.html) e [SPA/auth.js](SPA/auth.js)
+	- autenticação do usuário
+	- armazenamento do token no `localStorage`
 
-### Sistema e ambiente
+- [SPA/cadastro.html](SPA/cadastro.html)
+	- criação de conta
+	- confirmação de senha no cliente
 
-- sistema operacional com terminal disponível, como Linux, macOS ou Windows
-- navegador web moderno, como Chrome, Edge ou Firefox
+- [SPA/dashboard.html](SPA/dashboard.html) e [SPA/dashboard.js](SPA/dashboard.js)
+	- exibição de histórico de consultas
+	- cards de resumo
+	- gráficos com Chart.js
+	- tabela paginada
+
+- [SPA/styles.css](SPA/styles.css)
+	- estilos da interface
+
+## Requisitos
+
+### Ambiente
+
+- Linux, macOS ou Windows
+- navegador web moderno
+- acesso à internet para consultar os serviços públicos do Lattes
 
 ### Python
 
 - Python 3.10 ou superior
-- comando `python3` disponível no terminal
+- `python3` disponível no terminal
 
-### Bibliotecas Python utilizadas
+### Dependências
 
-O backend usa bibliotecas padrão do Python, SQLite nativo (`sqlite3`) e a biblioteca `requests`.
+As dependências estão em [requirements.txt](requirements.txt).
 
-Dependências necessárias:
-
-- `requests`
-
-Se precisar instalar manualmente:
+Instalação:
 
 ```bash
-pip3 install requests
+pip3 install -r requirements.txt
 ```
 
-### Rede
+Dependência atual:
 
-- acesso à internet para consultar o Lattes e o Buscatextual do CNPq
-- liberação de conexões HTTP/HTTPS para os domínios do Lattes
+- `requests>=2.31.0`
 
-### Porta local
+### Banco de dados
 
-- porta `8000` livre para subir o servidor local
+- SQLite nativo do Python
+- o arquivo é criado automaticamente em [DB/database.db](DB/database.db)
 
-Se a porta estiver ocupada, será necessário encerrar o processo que a está usando ou alterar a constante `PORT` em [API/main.py](API/main.py).
+## Como executar localmente
 
-### Estrutura esperada
-
-Para funcionar corretamente, o projeto espera esta organização:
-
-- [API](API) com os arquivos do backend
-- [SPA](SPA) com `index.html`, `app.js` e `styles.css`
-- [DB](DB) para armazenar o arquivo SQLite `database.db`
-
-### Observação importante
-
-O projeto depende do formato atual das páginas públicas do Lattes. Se o CNPq alterar a estrutura HTML ou os endpoints públicos, partes da coleta e do cálculo podem deixar de funcionar até ajuste no código.
-
-## Como executar
-
-Na pasta [API](API), execute:
+Na raiz do projeto, instale as dependências:
 
 ```bash
+pip3 install -r requirements.txt
+```
+
+Depois inicie a aplicação:
+
+```bash
+cd API
 python3 main.py
 ```
 
-Depois abra no navegador:
+Em seguida, abra no navegador:
 
 ```text
 http://127.0.0.1:8000
@@ -124,25 +210,151 @@ http://127.0.0.1:8000
 
 ## Deploy no Render
 
-Para publicar no Render como um único serviço web Python:
+O projeto está preparado para ser publicado no Render como um único serviço web Python.
 
-1. defina o comando de build como `pip install -r requirements.txt`
-2. defina o comando de start como `python3 API/main.py`
-3. mantenha a variável `PORT` gerenciada pelo próprio Render
+### Configuração recomendada
 
-O backend já está preparado para:
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `python3 API/main.py`
 
-- escutar em `0.0.0.0`
-- usar a porta informada em `PORT`
-- servir os arquivos da pasta [SPA](SPA) no mesmo domínio da API
+### Observações
 
-Com isso, as páginas HTML e os endpoints `/api/*` funcionam no mesmo serviço hospedado.
+- o servidor usa `0.0.0.0`
+- a porta é lida da variável `PORT`
+- os arquivos da pasta [SPA](SPA) são servidos pelo próprio backend
+- frontend e API funcionam no mesmo domínio
 
-## Endpoint disponível
+## Fluxo da aplicação
 
-### `POST /api/lattes`
+### 1. Cadastro e login
 
-Recebe um JSON com a URL completa ou o código público do currículo:
+O usuário pode:
+
+- criar conta em [SPA/cadastro.html](SPA/cadastro.html)
+- fazer login em [SPA/login.html](SPA/login.html)
+- receber um token de sessão salvo no navegador
+
+### 2. Consulta do currículo
+
+Na página principal [SPA/index.html](SPA/index.html):
+
+- o usuário informa uma URL ou código do Lattes
+- o frontend envia a requisição autenticada para `/api/lattes`
+- o backend consulta os dados públicos do currículo
+- o resultado é processado e devolvido ao frontend
+
+### 3. Renderização dos resultados
+
+O frontend mostra:
+
+- nome do pesquisador
+- código Lattes
+- anos considerados
+- publicações do período
+- resumo do barema
+- pontuação detalhada por seção
+- observações automáticas quando necessário
+
+### 4. Histórico
+
+Cada consulta é persistida no banco e pode ser visualizada no dashboard.
+
+## Endpoints da API
+
+## `GET /health`
+
+Retorna um payload simples para verificar se o serviço está ativo.
+
+Exemplo de resposta:
+
+```json
+{
+	"status": "ok"
+}
+```
+
+## `GET /api/consultas`
+
+Lista o histórico de consultas registradas.
+
+Parâmetros opcionais de query:
+
+- `start_date`
+- `end_date`
+- `success`
+
+Exemplo:
+
+```text
+/api/consultas?start_date=2026-01-01&end_date=2026-12-31&success=1
+```
+
+Resposta:
+
+```json
+{
+	"success": true,
+	"consultas": []
+}
+```
+
+## `POST /api/register`
+
+Cria um novo usuário.
+
+Exemplo de body:
+
+```json
+{
+	"username": "abel",
+	"password": "123456"
+}
+```
+
+## `POST /api/login`
+
+Autentica um usuário e retorna um token.
+
+Exemplo de body:
+
+```json
+{
+	"username": "abel",
+	"password": "123456"
+}
+```
+
+Exemplo de resposta de sucesso:
+
+```json
+{
+	"success": true,
+	"token": "...",
+	"message": "Login efetuado com sucesso."
+}
+```
+
+## `POST /api/logout`
+
+Encerra a sessão atual.
+
+Cabeçalho esperado:
+
+```text
+Authorization: Bearer <token>
+```
+
+## `POST /api/lattes`
+
+Executa a coleta do currículo e retorna o barema calculado.
+
+Cabeçalho esperado:
+
+```text
+Authorization: Bearer <token>
+```
+
+Exemplo de body:
 
 ```json
 {
@@ -158,70 +370,100 @@ Também aceita:
 }
 ```
 
-Retorna um JSON com:
+O retorno inclui, entre outros campos:
 
-- status da coleta
-- URL consultada
-- código interno do currículo
-- nome da pessoa retornada pelo Lattes
-- HTML de preview
-- HTML de índices
-- publicações agregadas por ano
-- barema calculado
+- `success`
+- `message`
+- `url`
+- `code`
+- `nome`
+- `preview_html`
+- `index_html`
+- `publicacoes`
+- `barema`
 
-## O que já é calculado no barema
+## Estrutura do barema calculado
 
-O cálculo atual contempla a estrutura abaixo:
+O cálculo atual está dividido em quatro blocos.
 
 ### I - Titulação
 
-- Doutorado: 12
-- Mestrado: 8
+- Doutorado: 12 pontos
+- Mestrado: 8 pontos
 
 ### II - Produção
 
-- Artigo completo publicado em periódico
-- Livro
-- Capítulo de livro
-- Resumo publicado em periódico
-- Resumo e trabalho publicado em anais de evento
-- Outras produções bibliográficas
-- Patente
-- Produção artística/cultural
-- Trabalho técnico
+- artigo completo publicado em periódico
+- livro
+- capítulo de livro
+- resumo publicado em periódico
+- resumo e trabalho publicado em anais de evento
+- outras produções bibliográficas
+- patente
+- produção artística/cultural
+- trabalho técnico
+
+Limite da seção: 30 pontos.
 
 ### III - Formação de recursos humanos
 
-- Doutorado
-- Mestrado
+- doutorado como orientador
+- mestrado como orientador
 - IC, IT, TCC, Especialização, PIBID, PIBEX, PET e Monitoria
+
+Limite da seção: 12 pontos.
 
 ### IV - Participação em eventos/comitê
 
-- Apresentação de trabalho
+- apresentação de trabalho
+
+Limite da seção: 6 pontos.
+
+### Total
+
+O total final é limitado a 60 pontos.
 
 ## Regra de período
 
-O projeto não usa mais um ano fixo como 2021.
-
-O barema considera dinamicamente os últimos 5 anos a partir do ano vigente:
+O projeto considera dinamicamente os últimos 5 anos com base no ano atual:
 
 $$ano\_minimo = ano\_atual - 5$$
 
 Exemplo:
 
-- em 2026, o período considerado começa em 2021
-- em 2027, o período considerado começa em 2022
+- em 2026, o período começa em 2021
+- em 2027, o período começa em 2022
 
-Essa regra é usada tanto no backend quanto na interface web.
+Essa regra é aplicada no backend e refletida na interface.
 
 ## Persistência em banco de dados
 
-O projeto grava os dados em SQLite no arquivo [DB/database.db](DB/database.db).
+O banco é armazenado em [DB/database.db](DB/database.db).
+
+### Tabela `users`
+
+Armazena os usuários cadastrados.
+
+Campos principais:
+
+- `id`
+- `username`
+- `password_hash`
+- `salt`
+
+### Tabela `sessions`
+
+Armazena sessões autenticadas.
+
+Campos principais:
+
+- `token`
+- `user_id`
+- `created_at`
 
 ### Tabela `consultas`
 
-Registra todas as consultas feitas pela aplicação.
+Armazena todas as consultas realizadas.
 
 Campos principais:
 
@@ -235,34 +477,90 @@ Campos principais:
 
 ### Tabela `barema`
 
-Registra o barema associado à última consulta realizada para cada `code`.
+Armazena o barema consolidado por currículo.
 
 Campos principais:
 
+- `id`
 - `consulta_id`
 - `code`
 - `nome`
-- subtotais bruto e limitado por seção
+- `titulacao_bruto`
+- `titulacao_limitado`
+- `producao_bruto`
+- `producao_limitado`
+- `formacao_bruto`
+- `formacao_limitado`
+- `eventos_bruto`
+- `eventos_limitado`
 - `total_bruto`
 - `total_limitado`
 - `barema_json`
 - `updated_at`
 
-Relacionamento:
+## Interface web
 
-- `barema.consulta_id` referencia `consultas.id`
-- o vínculo lógico principal entre os resultados também é feito pelo `code`
+### Página inicial
 
-## Limitações atuais
+Arquivo: [SPA/index.html](SPA/index.html)
 
-- algumas informações do Lattes não aparecem de forma estruturada nos HTMLs coletados
-- a detecção de titulação ainda depende de texto disponível no conteúdo retornado
-- a extração do nome depende do conteúdo retornado no HTML de preview
-- alguns indicadores públicos do Lattes podem variar conforme mudanças no Buscatextual
+Contém:
 
-## Próximos passos
+- apresentação do projeto
+- link para o edital
+- acesso ao histórico
+- botão de logout
+- formulário de consulta
+- resultado detalhado do barema
 
-- criar rotas para consulta do histórico salvo em SQLite
-- permitir listagem de consultas e baremas por `code`
-- refinar a interface e a apresentação do barema
-- ampliar a documentação do esquema do banco e dos endpoints
+### Login
+
+Arquivo: [SPA/login.html](SPA/login.html)
+
+Contém:
+
+- formulário de autenticação
+- mensagem de erro ou sucesso
+- link para cadastro
+
+### Cadastro
+
+Arquivo: [SPA/cadastro.html](SPA/cadastro.html)
+
+Contém:
+
+- formulário de cadastro
+- confirmação de senha
+- link para login
+
+### Dashboard
+
+Arquivos: [SPA/dashboard.html](SPA/dashboard.html) e [SPA/dashboard.js](SPA/dashboard.js)
+
+Contém:
+
+- total de consultas
+- total de sucessos
+- total de falhas
+- taxa de sucesso
+- gráfico de acessos por dia
+- gráfico de status das consultas
+- gráfico de top consultas com sucesso
+- tabela paginada de histórico
+
+## Limitações e observações atuais
+
+- o projeto depende da estrutura atual das páginas públicas do Lattes e do Buscatextual
+- alterações no HTML externo podem quebrar parte da extração
+- a identificação automática da titulação depende de texto encontrado no HTML de preview
+- algumas informações do currículo podem não aparecer de forma estruturada
+- o arquivo [SPA/dashboard.js](SPA/dashboard.js) referencia `/api/grafico-nomes`, mas esse endpoint não está implementado atualmente no backend; o código já evita falha se o gráfico não existir na página
+
+## Possíveis melhorias futuras
+
+- implementar o endpoint `/api/grafico-nomes`
+- adicionar expiração de sessão
+- melhorar tratamento de erros de rede com o Lattes
+- criar testes automatizados
+- documentar exemplos completos de resposta da API
+- adicionar paginação e filtros avançados também no backend do dashboard
