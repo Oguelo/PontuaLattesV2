@@ -42,6 +42,10 @@ function getMinimumBaremaYear() {
 	return new Date().getFullYear() - 5;
 }
 
+function getCurrentBaremaYear() {
+	return new Date().getFullYear();
+}
+
 function getFilteredPublicationSeries(publicacoes) {
 	const anoMinimo = getMinimumBaremaYear();
 	const series = publicacoes?.series || [];
@@ -68,6 +72,7 @@ function renderSummary(resultado, previewHtml) {
 	const publicacoes = resultado.publicacoes || {};
 	const pesquisador = extractResearcherName(resultado, previewHtml);
 	const anoMinimo = getMinimumBaremaYear();
+	const anoAtual = getCurrentBaremaYear();
 
 	const anosLimpos = (publicacoes.anos || [])
 		.map(a => String(a).trim())
@@ -77,7 +82,7 @@ function renderSummary(resultado, previewHtml) {
 		['Nome', pesquisador],
 		['Código Lattes', resultado.code || '-'],
 		[
-			`Últimos anos (>= ${anoMinimo})`,
+			`Período considerado (${anoMinimo} a ${anoAtual})`,
 			anosLimpos
 				.filter(ano => Number(ano) >= anoMinimo)
 				.join(', ') || 'Nenhum',
@@ -91,10 +96,11 @@ function renderSummary(resultado, previewHtml) {
 
 function renderPublications(series) {
 	const anoMinimo = getMinimumBaremaYear();
-	publicationsTitle.textContent = `Publicações desde ${anoMinimo}`;
+	const anoAtual = getCurrentBaremaYear();
+	publicationsTitle.textContent = `Publicações de ${anoMinimo} a ${anoAtual}`;
 
 	if (!series.length) {
-		publicationList.innerHTML = `<div class="publication-item">Nenhuma publicação encontrada a partir de ${anoMinimo}.</div>`;
+		publicationList.innerHTML = `<div class="publication-item">Nenhuma publicação encontrada entre ${anoMinimo} e ${anoAtual}.</div>`;
 		return;
 	}
 

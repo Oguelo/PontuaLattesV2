@@ -28,6 +28,24 @@ def _obter_ano_minimo_barema():
 	return date.today().year - 5
 
 
+def _expandir_anos_ate_ano_vigente(anos):
+	anos_validos = [int(ano) for ano in anos if str(ano).isdigit()]
+	if not anos_validos:
+		return anos
+
+	ano_atual = date.today().year
+	ultimo_ano = max(anos_validos)
+
+	if ultimo_ano >= ano_atual:
+		return anos
+
+	anos_expandidos = list(anos)
+	for ano in range(ultimo_ano + 1, ano_atual + 1):
+		anos_expandidos.append(str(ano))
+
+	return anos_expandidos
+
+
 def _extrair_variaveis_js(html):
 	variaveis = {}
 
@@ -84,7 +102,8 @@ def _normalizar_anos(anos):
 
 	if len(anchors) == 1:
 		base = anchors[0][1] - anchors[0][0]
-		return [str(base + indice) for indice in range(len(anos))]
+		anos_normalizados = [str(base + indice) for indice in range(len(anos))]
+		return _expandir_anos_ate_ano_vigente(anos_normalizados)
 
 	sequencia_continua = all(
 		indice_atual - indice_anterior == ano_atual - ano_anterior
@@ -93,9 +112,11 @@ def _normalizar_anos(anos):
 
 	if sequencia_continua:
 		base = anchors[0][1] - anchors[0][0]
-		return [str(base + indice) for indice in range(len(anos))]
+		anos_normalizados = [str(base + indice) for indice in range(len(anos))]
+		return _expandir_anos_ate_ano_vigente(anos_normalizados)
 
-	return [str(ano).strip() for ano in anos]
+	anos_normalizados = [str(ano).strip() for ano in anos]
+	return _expandir_anos_ate_ano_vigente(anos_normalizados)
 
 
 def _indices_validos_anos(anos, ano_minimo):
