@@ -16,6 +16,13 @@ form.addEventListener('submit', async (event) => {
 	
 	const username = document.getElementById('username').value.trim();
 	const password = document.getElementById('password').value;
+	const confirmPasswordInput = document.getElementById('confirm-password');
+	const confirmPassword = confirmPasswordInput ? confirmPasswordInput.value : '';
+
+	if (!isLogin && password !== confirmPassword) {
+		setStatus('error', 'As senhas não coincidem.');
+		return;
+	}
 
 	submitButton.disabled = true;
 	setStatus('info', 'Processando...');
@@ -38,10 +45,10 @@ form.addEventListener('submit', async (event) => {
 		if (isLogin) {
            
 			localStorage.setItem('auth_token', resultado.token);
-			window.location.href = '/index.html'; 
+			window.location.href = './index.html'; 
 		} else {
            
-			setTimeout(() => window.location.href = '/login.html', 1500);
+			setTimeout(() => window.location.href = './login.html', 1500);
 		}
 	} catch (error) {
 		setStatus('error', error.message);

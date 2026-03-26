@@ -4,7 +4,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Cadastro - Barema Automático</title>
-    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
 	<main class="page" style="max-width: 500px;">
@@ -23,14 +23,18 @@
 					<label for="password">Senha</label>
 					<input id="password" type="password" required>
 				</div>
+				<div>
+					<label for="confirm-password">Confirmar senha</label>
+					<input id="confirm-password" type="password" required>
+				</div>
 				<button id="submit-button" type="submit" style="margin-top: 10px;">Cadastrar</button>
 				<div id="status" class="status" aria-live="polite"></div>
 			</form>
             <p style="text-align: center; margin-top: 20px;">
-                Já tem uma conta? <a class="hero-link" href="/login.html">Fazer Login</a>
+				Já tem uma conta? <a class="hero-link" href="./login.html">Fazer Login</a>
             </p>
 		</section>
 	</main>
-    <script src="/auth.js" defer></script>
+	<script src="./auth.js" defer></script>
 </body>
 </html>

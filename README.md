@@ -122,6 +122,22 @@ Depois abra no navegador:
 http://127.0.0.1:8000
 ```
 
+## Deploy no Render
+
+Para publicar no Render como um único serviço web Python:
+
+1. defina o comando de build como `pip install -r requirements.txt`
+2. defina o comando de start como `python3 API/main.py`
+3. mantenha a variável `PORT` gerenciada pelo próprio Render
+
+O backend já está preparado para:
+
+- escutar em `0.0.0.0`
+- usar a porta informada em `PORT`
+- servir os arquivos da pasta [SPA](SPA) no mesmo domínio da API
+
+Com isso, as páginas HTML e os endpoints `/api/*` funcionam no mesmo serviço hospedado.
+
 ## Endpoint disponível
 
 ### `POST /api/lattes`

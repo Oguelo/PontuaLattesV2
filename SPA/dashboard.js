@@ -1,16 +1,17 @@
 document.addEventListener("DOMContentLoaded", () => {
-    criarGraficoVazio();  
+    criarGraficoVazio();
     carregarDashboard();      
 });
 let graficoTopUrls;
 let graficoDia;
 let graficoStatus;
+let graficoNomes;
 let paginaAtual = 1;
 const itensPorPagina = 10;
 let todasConsultas = [];
 
 async function carregarDashboard() {
-    const response = await fetch("http://127.0.0.1:8000/api/consultas");
+    const response = await fetch("/api/consultas");
     const dados = await response.json();
 
     if (!dados.success) return;
@@ -149,7 +150,13 @@ function preencherTopUrls(consultas) {
     }
 }
 function criarGraficoVazio() {
-    graficoNomes = new Chart(document.getElementById("grafico-nomes"), {
+    const canvas = document.getElementById("grafico-nomes");
+
+    if (!canvas) {
+        return;
+    }
+
+    graficoNomes = new Chart(canvas, {
         type: "bar",
         data: {
             labels: [],
@@ -167,6 +174,10 @@ function criarGraficoVazio() {
 }
 
 async function atualizarGraficoNomes() {
+    if (!graficoNomes) {
+        return;
+    }
+
     const response = await fetch("/api/grafico-nomes");
     const data = await response.json();
 

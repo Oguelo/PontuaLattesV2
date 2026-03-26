@@ -1,11 +1,11 @@
 import json
 import mimetypes
+import os
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 from database import get_all_consultas
-from pathlib import Path
 
 
 from controller import buscaLattes
@@ -15,8 +15,8 @@ from database import init_database
 BASE_DIR = Path(__file__).resolve().parent
 SPA_DIR = BASE_DIR.parent / "SPA"
 INDEX_FILE = SPA_DIR / "index.html"
-HOST = "127.0.0.1"
-PORT = 8000
+HOST = os.getenv("HOST", "0.0.0.0")
+PORT = int(os.getenv("PORT", "8000"))
 
 
 class ICCollectHandler(BaseHTTPRequestHandler):

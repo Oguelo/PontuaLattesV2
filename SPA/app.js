@@ -286,7 +286,7 @@ function renderBarema(barema) {
 
 const token = localStorage.getItem('auth_token');
 if (!token) {
-    window.location.href = '/login.html';
+	window.location.href = './login.html';
 }
 
 
@@ -309,7 +309,7 @@ if (logoutBtn) {
 
 		
 		localStorage.removeItem('auth_token');
-		window.location.href = '/login.html';
+		window.location.href = './login.html';
 	});
 }
 form.addEventListener('submit', async (event) => {
@@ -337,7 +337,7 @@ form.addEventListener('submit', async (event) => {
 		});
 		if (response.status === 401) {
 			localStorage.removeItem('auth_token');
-			window.location.href = '/login.html';
+			window.location.href = './login.html';
 			return;
 		}
 
