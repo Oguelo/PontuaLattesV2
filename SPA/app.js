@@ -313,7 +313,18 @@ form.addEventListener('submit', async (event) => {
 			body: JSON.stringify({ url }),
 		});
 
-		const resultado = await response.json();
+		const responseText = await response.text();
+		let resultado;
+
+		try {
+			resultado = responseText ? JSON.parse(responseText) : null;
+		} catch {
+			throw new Error('A API retornou uma resposta inválida.');
+		}
+
+		if (!resultado) {
+			throw new Error('A API retornou uma resposta vazia.');
+		}
 
 		if (!response.ok || !resultado.success) {
 			throw new Error(resultado.message || 'Não foi possível concluir a coleta.');

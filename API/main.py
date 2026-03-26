@@ -160,9 +160,18 @@ class ICCollectHandler(BaseHTTPRequestHandler):
                 self._send_json({"success": False, "message": "Informe a URL completa ou o código.", "code": None}, HTTPStatus.BAD_REQUEST)
                 return
 
-            resultado = buscaLattes(url_lattes)
-            status = HTTPStatus.OK if resultado.get("success") else HTTPStatus.BAD_GATEWAY
-            self._send_json(resultado, status)
+            try:
+                resultado = buscaLattes(url_lattes)
+                status = HTTPStatus.OK if resultado.get("success") else HTTPStatus.BAD_GATEWAY
+                self._send_json(resultado, status)
+            except Exception as exc:
+                self._send_json(
+                    {
+                        "success": False,
+                        "message": f"Erro interno ao processar a consulta: {exc}",
+                    },
+                    HTTPStatus.INTERNAL_SERVER_ERROR,
+                )
             return
 
         self._send_json({"success": False, "message": "Rota não encontrada."}, HTTPStatus.NOT_FOUND)

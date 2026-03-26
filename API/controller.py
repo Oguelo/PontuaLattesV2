@@ -193,8 +193,13 @@ def extract_publications(index_html):
 
 def _somar_series_por_ano(variaveis_js, nome_anos, padroes, ano_minimo=None):
 	ano_minimo = _obter_ano_minimo_barema() if ano_minimo is None else ano_minimo
-	anos = variaveis_js.get(nome_anos) or []
-	indices_validos = _indices_validos_anos(anos, ano_minimo)
+	anos_originais = variaveis_js.get(nome_anos) or []
+	anos = _normalizar_anos(anos_originais)
+	indices_validos = [
+		indice
+		for indice, ano in enumerate(anos)
+		if str(ano).isdigit() and int(ano) >= ano_minimo
+	]
 
 	if not indices_validos:
 		return 0
@@ -215,8 +220,13 @@ def _somar_series_por_ano(variaveis_js, nome_anos, padroes, ano_minimo=None):
 
 def _somar_variaveis_por_ano(variaveis_js, nome_anos, nomes_variaveis, ano_minimo=None):
 	ano_minimo = _obter_ano_minimo_barema() if ano_minimo is None else ano_minimo
-	anos = variaveis_js.get(nome_anos) or []
-	indices_validos = _indices_validos_anos(anos, ano_minimo)
+	anos_originais = variaveis_js.get(nome_anos) or []
+	anos = _normalizar_anos(anos_originais)
+	indices_validos = [
+		indice
+		for indice, ano in enumerate(anos)
+		if str(ano).isdigit() and int(ano) >= ano_minimo
+	]
 
 	if not indices_validos:
 		return 0
