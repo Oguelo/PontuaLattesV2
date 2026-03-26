@@ -5,6 +5,21 @@ const submitButton = document.getElementById('submit-button');
 
 const isLogin = window.location.pathname.includes('login.html');
 const endpoint = isLogin ? '/api/login' : '/api/register';
+const urlParams = new URLSearchParams(window.location.search);
+
+function getRedirectPath() {
+	const redirect = urlParams.get('redirect');
+
+	if (!redirect) {
+		return './dashboard.html';
+	}
+
+	if (/^(https?:)?\/\//i.test(redirect)) {
+		return './dashboard.html';
+	}
+
+	return redirect.startsWith('./') ? redirect : `./${redirect.replace(/^\/+/, '')}`;
+}
 
 function setStatus(type, message) {
 	statusBox.className = `status visible ${type}`;
@@ -45,7 +60,7 @@ form.addEventListener('submit', async (event) => {
 		if (isLogin) {
            
 			localStorage.setItem('auth_token', resultado.token);
-			window.location.href = './index.html'; 
+			window.location.href = getRedirectPath(); 
 		} else {
            
 			setTimeout(() => window.location.href = './login.html', 1500);

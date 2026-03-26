@@ -11,6 +11,7 @@ const baremaObservations = document.getElementById('barema-observations');
 
 const statBaremaTotal = document.getElementById('stat-barema-total');
 const statTotal = document.getElementById('stat-total');
+const token = localStorage.getItem('auth_token');
 
 function setStatus(type, message) {
 	statusBox.className = `status visible ${type}`;
@@ -284,14 +285,12 @@ function renderBarema(barema) {
 		: '';
 }
 
-const token = localStorage.getItem('auth_token');
-if (!token) {
-	window.location.href = './login.html';
-}
-
-
 const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn) {
+	if (!token) {
+		logoutBtn.style.display = 'none';
+	}
+
 	logoutBtn.addEventListener('click', async () => {
 		const token = localStorage.getItem('auth_token');
 		
@@ -309,7 +308,8 @@ if (logoutBtn) {
 
 		
 		localStorage.removeItem('auth_token');
-		window.location.href = './login.html';
+		logoutBtn.style.display = 'none';
+		setStatus('success', 'Sessão encerrada com sucesso.');
 	});
 }
 form.addEventListener('submit', async (event) => {
@@ -331,15 +331,9 @@ form.addEventListener('submit', async (event) => {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'Authorization': `Bearer ${token}`,
 			},
 			body: JSON.stringify({ url }),
 		});
-		if (response.status === 401) {
-			localStorage.removeItem('auth_token');
-			window.location.href = './login.html';
-			return;
-		}
 
 		const resultado = await response.json();
 

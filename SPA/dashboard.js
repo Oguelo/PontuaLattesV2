@@ -1,3 +1,9 @@
+const token = localStorage.getItem("auth_token");
+
+if (!token) {
+    window.location.href = "./login.html?redirect=dashboard.html";
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     criarGraficoVazio();
     carregarDashboard();      
@@ -11,7 +17,18 @@ const itensPorPagina = 10;
 let todasConsultas = [];
 
 async function carregarDashboard() {
-    const response = await fetch("/api/consultas");
+    const response = await fetch("/api/consultas", {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (response.status === 401) {
+        localStorage.removeItem("auth_token");
+        window.location.href = "./login.html?redirect=dashboard.html";
+        return;
+    }
+
     const dados = await response.json();
 
     if (!dados.success) return;

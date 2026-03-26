@@ -1,4 +1,5 @@
 import json
+import os
 import sqlite3
 from pathlib import Path
 import hashlib
@@ -7,6 +8,8 @@ import secrets
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR.parent / "DB" / "database.db"
+DEFAULT_DASHBOARD_USERNAME = os.getenv("DEFAULT_DASHBOARD_USERNAME", "admin")
+DEFAULT_DASHBOARD_PASSWORD = os.getenv("DEFAULT_DASHBOARD_PASSWORD", "pontualattes")
 
 CREATE_USERS_TABLE = """
 CREATE TABLE IF NOT EXISTS users (
@@ -104,7 +107,29 @@ def init_database():
 		connection.execute(CREATE_BAREMA_CONSULTA_INDEX)
 		connection.execute(CREATE_USERS_TABLE)
 		connection.execute(CREATE_SESSIONS_TABLE)
+		_ensure_default_dashboard_user(connection)
 		connection.commit()
+
+
+def _ensure_default_dashboard_user(connection):
+	pwd_hash, salt = hash_password(DEFAULT_DASHBOARD_PASSWORD)
+	cursor = connection.execute(
+		"SELECT id FROM users WHERE username = ?",
+		(DEFAULT_DASHBOARD_USERNAME,),
+	)
+	user = cursor.fetchone()
+
+	if user:
+		connection.execute(
+			"UPDATE users SET password_hash = ?, salt = ? WHERE id = ?",
+			(pwd_hash, salt, user["id"]),
+		)
+		return
+
+	connection.execute(
+		"INSERT INTO users (username, password_hash, salt) VALUES (?, ?, ?)",
+		(DEFAULT_DASHBOARD_USERNAME, pwd_hash, salt),
+	)
 
 
 def registrar_consulta(url_informada, resultado):

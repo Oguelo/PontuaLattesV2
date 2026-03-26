@@ -12,7 +12,7 @@ O sistema recebe uma URL pública do currículo Lattes ou apenas o código do cu
 
 Além da coleta e do cálculo, o projeto também oferece:
 
-- autenticação com cadastro, login e logout
+- autenticação exclusiva para acesso ao dashboard
 - armazenamento das consultas em SQLite
 - armazenamento do barema consolidado por currículo
 - dashboard com histórico das consultas realizadas
@@ -34,11 +34,11 @@ Além da coleta e do cálculo, o projeto também oferece:
 
 ### Autenticação
 
-- cadastro de usuário com senha
-- confirmação de senha na interface de cadastro
 - login com geração de token de sessão
 - logout com invalidação da sessão
-- proteção da consulta de Lattes por token
+- proteção do dashboard e do histórico por token
+- criação automática de um usuário padrão no banco
+- barema liberado sem autenticação
 
 ### Persistência e histórico
 
@@ -51,7 +51,6 @@ Além da coleta e do cálculo, o projeto também oferece:
 
 - página principal para consulta do currículo
 - página de login
-- página de cadastro
 - dashboard com resumo de consultas
 - visualização do barema por seção
 - visualização das publicações por ano
@@ -132,19 +131,20 @@ O projeto funciona como um serviço Python único que:
 
 - [SPA/app.js](SPA/app.js)
 	- envia a consulta para `/api/lattes`
-	- valida sessão no navegador
+	- permite consulta sem login
 	- renderiza resumo da coleta
 	- renderiza publicações dos últimos 5 anos
 	- renderiza o barema por blocos
-	- faz logout
+	- exibe logout apenas quando existe sessão ativa
 
 - [SPA/login.html](SPA/login.html) e [SPA/auth.js](SPA/auth.js)
-	- autenticação do usuário
+	- autenticação para acesso ao dashboard
 	- armazenamento do token no `localStorage`
+	- redirecionamento para o histórico após login
 
 - [SPA/cadastro.html](SPA/cadastro.html)
-	- criação de conta
-	- confirmação de senha no cliente
+	- página legada de cadastro
+	- não faz parte do fluxo principal atual
 
 - [SPA/dashboard.html](SPA/dashboard.html) e [SPA/dashboard.js](SPA/dashboard.js)
 	- exibição de histórico de consultas
@@ -226,20 +226,20 @@ O projeto está preparado para ser publicado no Render como um único serviço w
 
 ## Fluxo da aplicação
 
-### 1. Cadastro e login
+### 1. Consulta pública do barema
 
-O usuário pode:
+Qualquer usuário pode:
 
-- criar conta em [SPA/cadastro.html](SPA/cadastro.html)
-- fazer login em [SPA/login.html](SPA/login.html)
-- receber um token de sessão salvo no navegador
+- acessar [SPA/index.html](SPA/index.html)
+- informar uma URL ou código do Lattes
+- consultar e visualizar o barema sem autenticação
 
 ### 2. Consulta do currículo
 
 Na página principal [SPA/index.html](SPA/index.html):
 
 - o usuário informa uma URL ou código do Lattes
-- o frontend envia a requisição autenticada para `/api/lattes`
+- o frontend envia a requisição para `/api/lattes`
 - o backend consulta os dados públicos do currículo
 - o resultado é processado e devolvido ao frontend
 
@@ -255,9 +255,18 @@ O frontend mostra:
 - pontuação detalhada por seção
 - observações automáticas quando necessário
 
-### 4. Histórico
+### 4. Login para o dashboard
 
-Cada consulta é persistida no banco e pode ser visualizada no dashboard.
+Quando o usuário clica em histórico:
+
+- é redirecionado para [SPA/login.html](SPA/login.html)
+- autentica com o usuário padrão do sistema
+- recebe um token salvo no navegador
+- acessa [SPA/dashboard.html](SPA/dashboard.html)
+
+### 5. Histórico
+
+Cada consulta é persistida no banco e pode ser visualizada no dashboard autenticado.
 
 ## Endpoints da API
 
@@ -276,6 +285,8 @@ Exemplo de resposta:
 ## `GET /api/consultas`
 
 Lista o histórico de consultas registradas.
+
+Esse endpoint exige autenticação via token.
 
 Parâmetros opcionais de query:
 
@@ -300,16 +311,9 @@ Resposta:
 
 ## `POST /api/register`
 
-Cria um novo usuário.
+Endpoint atualmente desabilitado.
 
-Exemplo de body:
-
-```json
-{
-	"username": "abel",
-	"password": "123456"
-}
-```
+O sistema trabalha com um usuário padrão para acesso ao dashboard e retorna erro caso alguém tente criar conta por esse endpoint.
 
 ## `POST /api/login`
 
@@ -319,8 +323,8 @@ Exemplo de body:
 
 ```json
 {
-	"username": "abel",
-	"password": "123456"
+	"username": "admin",
+	"password": "pontualattes"
 }
 ```
 
@@ -348,11 +352,7 @@ Authorization: Bearer <token>
 
 Executa a coleta do currículo e retorna o barema calculado.
 
-Cabeçalho esperado:
-
-```text
-Authorization: Bearer <token>
-```
+Esse endpoint não exige autenticação.
 
 Exemplo de body:
 
@@ -442,7 +442,14 @@ O banco é armazenado em [DB/database.db](DB/database.db).
 
 ### Tabela `users`
 
-Armazena os usuários cadastrados.
+Armazena usuários do sistema.
+
+Atualmente, a aplicação garante a existência automática de um usuário padrão para acesso ao dashboard:
+
+- usuário: `admin`
+- senha padrão: `pontualattes`
+
+Esses valores podem ser sobrescritos pelas variáveis de ambiente `DEFAULT_DASHBOARD_USERNAME` e `DEFAULT_DASHBOARD_PASSWORD`.
 
 Campos principais:
 
@@ -508,7 +515,7 @@ Contém:
 
 - apresentação do projeto
 - link para o edital
-- acesso ao histórico
+- acesso ao histórico com redirecionamento para login
 - botão de logout
 - formulário de consulta
 - resultado detalhado do barema
@@ -521,7 +528,7 @@ Contém:
 
 - formulário de autenticação
 - mensagem de erro ou sucesso
-- link para cadastro
+- acesso exclusivo ao histórico de consultas
 
 ### Cadastro
 
@@ -529,9 +536,8 @@ Arquivo: [SPA/cadastro.html](SPA/cadastro.html)
 
 Contém:
 
-- formulário de cadastro
-- confirmação de senha
-- link para login
+- uma interface legada de cadastro
+- não é utilizada no fluxo principal atual
 
 ### Dashboard
 
@@ -554,6 +560,7 @@ Contém:
 - alterações no HTML externo podem quebrar parte da extração
 - a identificação automática da titulação depende de texto encontrado no HTML de preview
 - algumas informações do currículo podem não aparecer de forma estruturada
+- o acesso ao histórico depende do usuário padrão configurado no banco ou por variável de ambiente
 - o arquivo [SPA/dashboard.js](SPA/dashboard.js) referencia `/api/grafico-nomes`, mas esse endpoint não está implementado atualmente no backend; o código já evita falha se o gráfico não existir na página
 
 ## Possíveis melhorias futuras

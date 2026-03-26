@@ -20,6 +20,14 @@ PORT = int(os.getenv("PORT", "8000"))
 
 
 class ICCollectHandler(BaseHTTPRequestHandler):
+    def _get_authenticated_user_id(self):
+        auth_header = self.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            return None
+
+        token = auth_header.split(" ", 1)[1]
+        from database import get_user_id_by_token
+        return get_user_id_by_token(token)
     
     def _resolve_static_path(self, request_path):
         relative_path = request_path.lstrip("/") or "index.html"
@@ -80,6 +88,10 @@ class ICCollectHandler(BaseHTTPRequestHandler):
             return
         
         if self.path.startswith("/api/consultas"):
+            if not self._get_authenticated_user_id():
+                self._send_json({"success": False, "message": "Não autorizado. Faça login para acessar o histórico."}, HTTPStatus.UNAUTHORIZED)
+                return
+
             qs = parse_qs(urlparse(self.path).query)
 
             start_date = qs.get("start_date", [None])[0]
@@ -116,18 +128,7 @@ class ICCollectHandler(BaseHTTPRequestHandler):
 
         
         if self.path == "/api/register":
-            username = payload.get("username", "").strip()
-            password = payload.get("password", "")
-            
-            if not username or not password:
-                self._send_json({"success": False, "message": "Preencha todos os campos."}, HTTPStatus.BAD_REQUEST)
-                return
-                
-            from database import create_user
-            if create_user(username, password):
-                self._send_json({"success": True, "message": "Usuário registado com sucesso!"})
-            else:
-                self._send_json({"success": False, "message": "O usuário já existe."}, HTTPStatus.CONFLICT)
+            self._send_json({"success": False, "message": "Cadastro desabilitado. Use o usuário padrão do sistema."}, HTTPStatus.FORBIDDEN)
             return
 
    
@@ -154,18 +155,6 @@ class ICCollectHandler(BaseHTTPRequestHandler):
             return
 
         elif self.path == "/api/lattes":
-            auth_header = self.headers.get("Authorization", "")
-            if not auth_header.startswith("Bearer "):
-                self._send_json({"success": False, "message": "Não autorizado. Faça login primeiro."}, HTTPStatus.UNAUTHORIZED)
-                return
-            
-            token = auth_header.split(" ")[1]
-            from database import get_user_id_by_token
-            if not get_user_id_by_token(token):
-                self._send_json({"success": False, "message": "Sessão inválida ou expirada."}, HTTPStatus.UNAUTHORIZED)
-                return
-
-           
             url_lattes = str(payload.get("url") or "").strip()
             if not url_lattes:
                 self._send_json({"success": False, "message": "Informe a URL completa ou o código.", "code": None}, HTTPStatus.BAD_REQUEST)
