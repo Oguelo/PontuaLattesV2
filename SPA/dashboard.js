@@ -216,20 +216,60 @@ function renderizarControles(totalPaginas) {
     const container = document.getElementById("paginacao");
     container.innerHTML = "";
 
+    const maxBotoes = 5; // máximo de botões numéricos visíveis
+    let start = Math.max(paginaAtual - Math.floor(maxBotoes / 2), 1);
+    let end = start + maxBotoes - 1;
+
+    if (end > totalPaginas) {
+        end = totalPaginas;
+        start = Math.max(end - maxBotoes + 1, 1);
+    }
+
+    // Botão anterior
     const btnPrev = document.createElement("button");
     btnPrev.textContent = "‹";
     btnPrev.disabled = paginaAtual === 1;
     btnPrev.addEventListener("click", () => mudarPagina(paginaAtual - 1));
     container.appendChild(btnPrev);
 
-    for (let i = 1; i <= totalPaginas; i++) {
+    // Botões numéricos
+    if (start > 1) {
+        const btn1 = document.createElement("button");
+        btn1.textContent = "1";
+        btn1.addEventListener("click", () => mudarPagina(1));
+        container.appendChild(btn1);
+
+        if (start > 2) {
+            const dots = document.createElement("span");
+            dots.textContent = "…";
+            dots.style.margin = "0 5px";
+            container.appendChild(dots);
+        }
+    }
+
+    for (let i = start; i <= end; i++) {
         const btn = document.createElement("button");
         btn.textContent = i;
-        btn.style.fontWeight = i === paginaAtual ? "bold" : "normal";
+        btn.className = i === paginaAtual ? "current" : "";
         btn.addEventListener("click", () => mudarPagina(i));
         container.appendChild(btn);
     }
 
+    if (end < totalPaginas) {
+        if (end < totalPaginas - 1) {
+            const dots = document.createElement("span");
+            dots.textContent = "…";
+            dots.style.margin = "0 5px";
+            container.appendChild(dots);
+        }
+
+        const btnLast = document.createElement("button");
+        btnLast.textContent = totalPaginas;
+        btnLast.addEventListener("click", () => mudarPagina(totalPaginas));
+        container.appendChild(btnLast);
+    }
+
+    // Botão próximo
     const btnNext = document.createElement("button");
     btnNext.textContent = "›";
     btnNext.disabled = paginaAtual === totalPaginas;
