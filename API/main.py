@@ -10,8 +10,9 @@ from database import get_all_consultas
 
 from controller import buscaLattes
 from database import init_database
-
-
+from database import get_user_id_by_token
+from database import delete_session
+from database import verify_login
 BASE_DIR = Path(__file__).resolve().parent
 SPA_DIR = BASE_DIR.parent / "SPA"
 INDEX_FILE = SPA_DIR / "index.html"
@@ -26,7 +27,7 @@ class ICCollectHandler(BaseHTTPRequestHandler):
             return None
 
         token = auth_header.split(" ", 1)[1]
-        from database import get_user_id_by_token
+        
         return get_user_id_by_token(token)
     
     def _resolve_static_path(self, request_path):
@@ -136,7 +137,7 @@ class ICCollectHandler(BaseHTTPRequestHandler):
             username = payload.get("username", "").strip()
             password = payload.get("password", "")
             
-            from database import verify_login
+          
             token = verify_login(username, password)
             if token:
                 self._send_json({"success": True, "token": token, "message": "Login efetuado com sucesso."})
@@ -149,7 +150,7 @@ class ICCollectHandler(BaseHTTPRequestHandler):
             auth_header = self.headers.get("Authorization", "")
             if auth_header.startswith("Bearer "):
                 token = auth_header.split(" ")[1]
-                from database import delete_session
+                
                 delete_session(token)
             self._send_json({"success": True, "message": "Sessão terminada."})
             return
