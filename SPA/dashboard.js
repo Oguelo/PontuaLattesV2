@@ -85,7 +85,7 @@ function renderizarLink(url) {
     }
 
     const urlEscapada = escapeHtml(url);
-    return `<a href="${urlEscapada}" target="_blank" rel="noopener noreferrer">${urlEscapada}</a>`;
+    return `<a class="soft-link" href="${urlEscapada}" target="_blank" rel="noopener noreferrer">${urlEscapada}</a>`;
 }
 
 async function fetchConsultasPorDia() {
@@ -156,7 +156,7 @@ function gerarTabelaHistoricoConsultas(consultas, totalPaginas) {
             <td>${renderizarLink(formatarLattesUrl(c))}</td>
             <td>${formatarIndicadoresUrl(c.code) === "-"
                 ? "-"
-                : `<a href="${escapeHtml(formatarIndicadoresUrl(c.code))}" target="_blank" rel="noopener noreferrer">Link</a>`}</td>
+                : `<a class="soft-link" href="${escapeHtml(formatarIndicadoresUrl(c.code))}" target="_blank" rel="noopener noreferrer">Link</a>`}</td>
             <td>${c.success === 1 ? "✅" : "❌"}</td>
             <td>${escapeHtml(c.created_at || "-")}</td>
         </tr>

@@ -46,6 +46,33 @@ function getCurrentBaremaYear() {
 	return new Date().getFullYear();
 }
 
+function escapeHtml(value) {
+	return String(value ?? '')
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;');
+}
+
+function getIndicadoresPublicacaoUrl(code) {
+	const valor = String(code ?? '').trim();
+	if (!valor) {
+		return '-';
+	}
+
+	return `http://buscatextual.cnpq.br/buscatextual/graficos.do?metodo=apresentar&codRHCript=${encodeURIComponent(valor)}`;
+}
+
+function renderExternalLink(url) {
+	if (!url || url === '-') {
+		return '-';
+	}
+
+	const safeUrl = escapeHtml(url);
+	return `<a class="soft-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer">Link</a>`;
+}
+
 function getFilteredPublicationSeries(publicacoes) {
 	const anoMinimo = getMinimumBaremaYear();
 	const series = publicacoes?.series || [];
@@ -79,13 +106,13 @@ function renderSummary(resultado, previewHtml) {
 		.filter(a => a !== '' && !isNaN(Number(a)));
 
 	const itens = [
-		['Nome', pesquisador],
-		['Gráfico Lattes:', resultado.code ? `http://buscatextual.cnpq.br/buscatextual/graficos.do?metodo=apresentar&codRHCript=${resultado.code}` : '-'],
+		['Nome', escapeHtml(pesquisador)],
+		['Indicadores de publicação', renderExternalLink(getIndicadoresPublicacaoUrl(resultado.code))],
 		[
 			`Período considerado (${anoMinimo} a ${anoAtual})`,
-			anosLimpos
+			escapeHtml(anosLimpos
 				.filter(ano => Number(ano) >= anoMinimo)
-				.join(', ') || 'Nenhum',
+				.join(', ') || 'Nenhum'),
 		],
 	];
 
