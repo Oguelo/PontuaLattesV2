@@ -193,6 +193,21 @@ canvas {
 	color: var(--muted);
 }
 
+.footer-note {
+	margin-top: 18px;
+}
+
+.footer-subtle-link {
+	font-size: 0.92rem;
+	font-weight: 400;
+	color: var(--muted);
+	opacity: 0.88;
+}
+
+.footer-subtle-link:hover {
+	color: #7dd3fc;
+}
+
 .form-panel form {
 	display: grid;
 	gap: 16px;

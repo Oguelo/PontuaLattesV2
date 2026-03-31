@@ -38,6 +38,56 @@ async function fetchConsultas(pagina = 1) {
     }
 }
 
+function escapeHtml(valor) {
+    return String(valor ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function formatarLattesUrl(consulta) {
+    const candidatos = [consulta?.url_consultada, consulta?.url_informada, consulta?.code]
+        .map(valor => String(valor ?? "").trim())
+        .filter(Boolean);
+
+    for (const valor of candidatos) {
+        if (/^https?:\/\//i.test(valor)) {
+            return valor;
+        }
+
+        if (/^lattes\.cnpq\.br\/\d+$/i.test(valor)) {
+            return `http://${valor}`;
+        }
+
+        if (/^\d+$/.test(valor)) {
+            return `http://lattes.cnpq.br/${valor}`;
+        }
+    }
+
+    return "-";
+}
+
+function formatarIndicadoresUrl(code) {
+    const valor = String(code ?? "").trim();
+
+    if (!valor) {
+        return "-";
+    }
+
+    return `http://buscatextual.cnpq.br/buscatextual/graficos.do?metodo=apresentar&codRHCript=${encodeURIComponent(valor)}`;
+}
+
+function renderizarLink(url) {
+    if (!url || url === "-") {
+        return "-";
+    }
+
+    const urlEscapada = escapeHtml(url);
+    return `<a href="${urlEscapada}" target="_blank" rel="noopener noreferrer">${urlEscapada}</a>`;
+}
+
 async function fetchConsultasPorDia() {
     try {
         const response = await fetch(`/api/consultas/dia`, {
@@ -100,13 +150,15 @@ function gerarTabelaHistoricoConsultas(consultas, totalPaginas) {
     const tabela = document.getElementById("tabela-consultas");
     tabela.innerHTML = consultas.map(c => `
         <tr>
-            <td>${c.id}</td>
-            <td>${c.nome || "-"}</td>
-            <td>${c.total_limitado || "-"}</td>
-            <td>${c.url_consultada}</td>
-            <td>${c.code}</td>
+            <td>${escapeHtml(c.id)}</td>
+            <td>${escapeHtml(c.nome || "-")}</td>
+            <td>${escapeHtml(c.total_limitado || "-")}</td>
+            <td>${renderizarLink(formatarLattesUrl(c))}</td>
+            <td>${formatarIndicadoresUrl(c.code) === "-"
+                ? "-"
+                : `<a href="${escapeHtml(formatarIndicadoresUrl(c.code))}" target="_blank" rel="noopener noreferrer">Link</a>`}</td>
             <td>${c.success === 1 ? "✅" : "❌"}</td>
-            <td>${c.created_at}</td>
+            <td>${escapeHtml(c.created_at || "-")}</td>
         </tr>
     `).join("");
 
@@ -193,19 +245,6 @@ function criarGraficoStatus(resumo) {
     } else {
         graficoStatus.data.datasets[0].data = [sucessos, falhas];
         graficoStatus.update();
-    }
-}
-
-async function fetchConsultasPorDia() {
-    try {
-        const response = await fetch(`/api/consultas/dia`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        const dados = await response.json();
-        return dados.success ? dados.dados : [];
-    } catch (err) {
-        console.error("Erro ao buscar consultas por dia:", err);
-        return [];
     }
 }
 
