@@ -193,7 +193,11 @@ Dependências principais:
 Variáveis de ambiente obrigatórias:
 
 - `GOOGLE_SHEETS_SPREADSHEET_ID`
-- `GOOGLE_SERVICE_ACCOUNT_JSON` ou `GOOGLE_SERVICE_ACCOUNT_FILE`
+- `GOOGLE_SERVICE_ACCOUNT_JSON`
+
+Alternativa local opcional:
+
+- `GOOGLE_SERVICE_ACCOUNT_FILE`
 
 ## Como executar localmente
 
@@ -207,7 +211,7 @@ Antes de iniciar, configure a planilha e a conta de serviço:
 
 ```bash
 export GOOGLE_SHEETS_SPREADSHEET_ID="SEU_ID_DA_PLANILHA"
-export GOOGLE_SERVICE_ACCOUNT_FILE="DB/pontuallates_key.json"
+export GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
 ```
 
 Depois inicie a aplicação:

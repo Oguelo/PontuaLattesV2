@@ -2,10 +2,12 @@
 
 import json
 import os
+import base64
 import hashlib
 import re
 import secrets
 from datetime import datetime
+from pathlib import Path
 from threading import RLock
 from urllib.parse import urlparse
 
@@ -15,24 +17,9 @@ from google.oauth2.service_account import Credentials
 
 DEFAULT_DASHBOARD_USERNAME = os.getenv("DEFAULT_DASHBOARD_USERNAME", "admin")
 DEFAULT_DASHBOARD_PASSWORD = os.getenv("DEFAULT_DASHBOARD_PASSWORD", "pontualattes")
-DEFAULT_GOOGLE_SHEETS_SPREADSHEET_ID = "1f78in2E1nG3cuPPQq884jU1-7XRQxHvgEHYLU5SRNUo"
-GOOGLE_SHEETS_SPREADSHEET_ID = os.getenv(
-	"GOOGLE_SHEETS_SPREADSHEET_ID",
-	DEFAULT_GOOGLE_SHEETS_SPREADSHEET_ID,
-).strip()
-HARDCODED_GOOGLE_SERVICE_ACCOUNT_INFO = {
-  "type": "service_account",
-  "project_id": "meupesqhub",
-  "private_key_id": "f75c05e8d4946fe56846fafb5e7f3d7e262b08ac",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDENpUZPfsC5zsZ\nT5YHW+x6ld7S/sjbnWx/Yqn3Mjz3alTuUGBNogdCgFHN8LSbuiK6jkG6whyATNyp\nBikn+4MKt98jou+E3drQ2nc+zbm5Nq/d8vZim6weCljNTzB1O9XLAvrsWnoHZHM6\nvFbSSzXepqldisIYTG83OtPMRq0pGV7tBMH9xRTdMGHfDURxdZpTuvrtCrOmHHUt\n48FJUYQSaToZdT5awzQ8VEh05AwXkw53qOr7K1qGMdTvmuLYeV4qTeMdh2CXAwXZ\nv/t7szNx5xWmOq3eLBkMD2DYH6sDgxWVFEnKRMo4I/8rYGgS1uTekPYvYGsF80UM\nQb3+q7mpAgMBAAECggEADlabQ2iUN9h4KP+3+9Jvt98NFQ/dk2/f8nieKURkcGOW\nsIIS4YVwQJ+yKqmW9yTNXiLgYoKGFOmY++iJeCSg5Tb90UO6O1Q/heDbEy2zL1nT\n1PUo5FiSJbFVny404TJFy6OsfLpZXcItSfrioNQya/JzoLRvvdkTDP8JZG17QKwb\nIuNSFwdwHvTMv4ToyIyzxUDsE+zrLkMcCXgKbEmJ8wbCXlQ5TRPSZJGZdFgQmPEV\nt+GEFld/ZOfvH/3HXnajB5JvdkUsCPS/Gge6qw7iLILS+6Wkctu0gOJrHF6qs65/\neFFejCJrgbVByL6sFygLAajwVzKCg0V3GbHkBkK7IQKBgQD5QuO3nA0I1haqJnMg\nHDaW7dkUBScQQHYxpm8+hmnuhTQfT2BEEjUIsMn+wQAWzxm6DdIhJSSxG8Z0uAGk\nKcX1R9KwYoHm5DpHa1+ROSbDf1MoeXtcz+Y1NlUPkXLVSWsijrfYyTKRuiiSl8fm\nKnSzunEOW2QA8HDnab+IRevEiQKBgQDJhI2Kd3JZBWoJD8xFz5/J7h03+/tJQ2IN\npJH9cRnwYWx9M3L2swDYRo0L1sFNgKvqctH4+G0UzCZnk+0fUYXR85vMAAtAj+WS\noWht5/52mEzRqtbzpOLThRG48Tafi6vKHYWrLrWrjXn8D8Cv8PFH4b5rAugtZfB2\nSDfGs7tEIQKBgQCXgs0gIj7aDCgirNR1xDB6dYDp5mfkPQqbC2u7OcDSNy2DiqAd\nQGP0MGHX9EC1nJUqvpPnichPz25GLELzImEtwsaSaI5FZpz2JJIml/K0CoTlqVIP\nDGAGIEx79hEzDDmO++lMYJ/YbKuUz6W2hkABr2ZhL7QNzhkS0PiXQMka4QKBgCsV\nyB1exHf8DFu7oPUcGxHVczHREjzrxz8bfIsvb1hRvBxYr6/HPdr/2pA5bkLfy+Ho\ngrQ0iT31GBD1M7GKgI4PA7RuHfnDylW7ZNR60ZERpvr9B9A35LdMsClWiVM7TZN9\nFGMxLW5sZTRbOdtkLHIt9cRzbqimLu9bKXG2Y8eBAoGABVHqe073RasOXlLuHAlX\ndJKLmaXtM9vuxkkPPC3E8uniV+WKqUm8G0CN1UkVl+dHEiuObxq5GmJhTT88cMvV\nAxxVOHPTE/LNUc6hOqyiKwk94h6j3HRvI1U+Ze6I8jRlQOS7+np3FzD8RevpvRgE\nOXKycPqk7euBiOSR3ehkmrA=\n-----END PRIVATE KEY-----\n",
-  "client_email": "pontuallattes@meupesqhub.iam.gserviceaccount.com",
-  "client_id": "115225514681998413955",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/pontuallattes%40meupesqhub.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
+GOOGLE_SHEETS_SPREADSHEET_ID = os.getenv("GOOGLE_SHEETS_SPREADSHEET_ID", "").strip()
+GOOGLE_SERVICE_ACCOUNT_JSON = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
+GOOGLE_SERVICE_ACCOUNT_FILE = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "").strip()
 
 SCOPES = [
 	"https://www.googleapis.com/auth/spreadsheets",
@@ -122,10 +109,25 @@ def _require_google_settings():
 			"Defina a variável GOOGLE_SHEETS_SPREADSHEET_ID com o ID da planilha que será usada como banco de dados."
 		)
 
-	if not HARDCODED_GOOGLE_SERVICE_ACCOUNT_INFO:
+	if not GOOGLE_SERVICE_ACCOUNT_JSON and not GOOGLE_SERVICE_ACCOUNT_FILE:
 		raise RuntimeError(
-			"Defina a conta de serviço diretamente no código para autenticar no Google Sheets."
+			"Defina GOOGLE_SERVICE_ACCOUNT_JSON no Render ou GOOGLE_SERVICE_ACCOUNT_FILE no ambiente local."
 		)
+
+
+def _parse_service_account_json(raw_value):
+	value = str(raw_value or "").strip()
+	if not value:
+		raise RuntimeError("GOOGLE_SERVICE_ACCOUNT_JSON está vazio.")
+
+	if len(value) >= 2 and value[0] == value[-1] and value[0] in {'"', "'"}:
+		value = value[1:-1]
+
+	try:
+		return json.loads(value)
+	except json.JSONDecodeError:
+		decoded_value = base64.b64decode(value).decode("utf-8")
+		return json.loads(decoded_value)
 
 
 def _normalize_service_account_info(service_account_info):
@@ -147,7 +149,21 @@ def _normalize_service_account_info(service_account_info):
 
 
 def _load_service_account_info():
-	return _normalize_service_account_info(HARDCODED_GOOGLE_SERVICE_ACCOUNT_INFO)
+	if GOOGLE_SERVICE_ACCOUNT_JSON:
+		return _normalize_service_account_info(_parse_service_account_json(GOOGLE_SERVICE_ACCOUNT_JSON))
+
+	service_account_path = Path(GOOGLE_SERVICE_ACCOUNT_FILE).expanduser()
+	if not service_account_path.is_absolute():
+		service_account_path = service_account_path.resolve()
+
+	if not service_account_path.exists():
+		raise RuntimeError(
+			f"Arquivo da conta de serviço não encontrado em {service_account_path}."
+		)
+
+	return _normalize_service_account_info(
+		json.loads(service_account_path.read_text(encoding="utf-8"))
+	)
 
 
 def _get_client():
