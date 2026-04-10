@@ -1,4 +1,4 @@
-#!/home/abel/Documentos/EXA618/IC_COLLECT/.venv/bin/python3
+#!/home/alexjr/Documentos/Atividade_programação_redes/IC_COLLECT/.venv/bin/python3
 # -*- coding: utf-8 -*-
 import re
 import sys
