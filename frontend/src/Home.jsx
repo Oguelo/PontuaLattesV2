@@ -1,37 +1,48 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import BaremaCard from './components/BaremaCard';
-
+import logoUefs from './assets/logoUefs.png'; 
 
 const getMinimumBaremaYear = () => new Date().getFullYear() - 5;
 const getCurrentBaremaYear = () => new Date().getFullYear();
 const formatNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 
 export default function Home() {
-  
+  const currentYear = getCurrentBaremaYear();
   const [url, setUrl] = useState('');
   const [status, setStatus] = useState({ type: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
+  
+ 
+  const [topPesquisas, setTopPesquisas] = useState([]);
 
   
-  const buscarLattes = async (e) => {
-    e.preventDefault();
-    if (!url.trim()) {
-      setStatus({ type: 'error', message: 'Informe a URL completa ou o código do currículo Lattes.' });
-      return;
+  useEffect(() => {
+    const historicoSalvo = localStorage.getItem('rankingLattes');
+    if (historicoSalvo) {
+      setTopPesquisas(JSON.parse(historicoSalvo));
     }
+  }, []);
+
+  const realizarConsulta = async (termoDeBusca) => {
+    if (!termoDeBusca) return;
 
     setLoading(true);
     setStatus({ type: 'info', message: 'Consultando a API e coletando os dados do currículo...' });
     setResultado(null);
+  
+    setUrl(termoDeBusca); 
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
     try {
-     
-      const response = await axios.post('/api/lattes', { url });
+      const response = await axios.post('/api/lattes', { url: termoDeBusca });
       
       if (response.data && response.data.success) {
         setResultado(response.data);
         setStatus({ type: 'success', message: 'Coleta realizada com sucesso.' });
+        atualizarRanking(response.data, termoDeBusca); 
       } else {
         throw new Error(response.data.message || 'Erro na resposta da API.');
       }
@@ -45,20 +56,83 @@ export default function Home() {
     }
   };
 
+  
+
+  const atualizarRanking = (novoDado, termoPesquisado) => {
+    
+  
+    const pedacosUrl = termoPesquisado.split('/');
+    const idLimpo = pedacosUrl[pedacosUrl.length - 1].trim();
+
+    setTopPesquisas((rankingAntigo) => {
+      const novaPesquisa = {
+        nome: novoDado.nome || 'Não identificado',
+        pontuacao: novoDado.barema.total_limitado,
+        id: idLimpo 
+      };
+
+      const listaSemDuplicata = rankingAntigo.filter(item => item.id !== novaPesquisa.id);
+
+      const novaLista = [...listaSemDuplicata, novaPesquisa]
+        .sort((a, b) => b.pontuacao - a.pontuacao)
+        .slice(0, 5);
+
+      localStorage.setItem('rankingLattes', JSON.stringify(novaLista));
+
+      return novaLista;
+    });
+  };
+ 
+  const buscarLattes = (e) => {
+    e.preventDefault();
+    if (!url.trim()) {
+      setStatus({ type: 'error', message: 'Informe a URL completa ou o código do currículo Lattes.' });
+      return;
+    }
+    realizarConsulta(url); 
+  };
+
+  const limparHistorico = () => {
+    localStorage.removeItem('rankingLattes');
+    setTopPesquisas([]);
+  };
+
   return (
     <main className="page">
-      {/* Seção Hero */}
-      <section className="hero">
-        <span className="hero-badge">Projeto de extensão • UEFS</span>
-        <h1>PontuaLattes</h1>
-        <p className="hero-lead" style={{ textAlign: 'justify' }}>
-          Sistema que analisa o currículo Lattes e organiza automaticamente o barema para apoiar a avaliação de candidatos a bolsas de Iniciação Científica da UEFS.
-        </p>
-        <div className="hero-meta">
-          <a className="hero-link" href="http://www.pppg.uefs.br/arquivos/File/editais/IC/2026/Edital_IC_UEFS_2026.pdf" target="_blank" rel="noopener noreferrer">
-            Ver edital IC UEFS 2026
-          </a>
+      {/* Seção Hero Responsiva */}
+      <section className="hero hero-responsive">
+        <div className="hero-text-container"> 
+          <span className="hero-badge">
+            Projeto de extensão • UEFS
+          </span>
+          <h1>PontuaLattes</h1>
+          <p className="hero-lead">
+            Sistema que analisa o currículo Lattes e organiza automaticamente o barema para apoiar a avaliação de candidatos a bolsas de Iniciação Científica da UEFS.
+          </p>
+          <div className="hero-meta">
+            <a 
+              className="hero-link" 
+              href={`http://www.pppg.uefs.br/arquivos/File/editais/IC/${currentYear}/Edital_IC_UEFS_${currentYear}.pdf`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              Ver edital IC UEFS {currentYear}
+            </a>
+          </div>
         </div>
+
+        <img 
+          src={logoUefs} 
+          alt="logoUefs" 
+          style={{ 
+            maxWidth: '200px',
+            width: '100%',
+            height: 'auto',         
+            borderRadius: '12px',   
+            flexShrink: 0,          
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }} 
+        />
       </section>
 
       {/* Seção do Formulário */}
@@ -82,7 +156,6 @@ export default function Home() {
           </div>
           <p className="helper-text">Informe a URL completa ou o código público do currículo Lattes.</p>
           
-          {/* Caixa de Status Condicional */}
           {status.message && (
             <div className={`status visible ${status.type}`} aria-live="polite">
               {status.message}
@@ -91,7 +164,7 @@ export default function Home() {
         </form>
       </section>
 
-      {/* Renderização Condicional dos Resultados: Só aparece se 'resultado' não for nulo */}
+      {/* Resultados Atuais */}
       {resultado && resultado.barema && (
         <section id="results" className="results visible">
           <div className="summary">
@@ -114,17 +187,66 @@ export default function Home() {
               <li><strong>Indicadores:</strong> <a className="soft-link" href={`http://buscatextual.cnpq.br/buscatextual/graficos.do?metodo=apresentar&codRHCript=${resultado.code}`} target="_blank" rel="noopener noreferrer">Link</a></li>
             </ul>
           </article>
-          {/* Chamando o nosso novo componente React aqui! */}
           <BaremaCard barema={resultado.barema} />
         </section>
       )}
 
-      {/* Rodapé */}
+  
+   
+      {topPesquisas.length > 0 && (
+        
+        <section className="panel ranking-panel">
+          
+          <div className="ranking-header">
+            <h2 style={{ margin: 0 }}>Top 5 Pontuações Pesquisadas</h2>
+            <button 
+              onClick={limparHistorico}
+              className="btn-clear-ranking"
+            >
+              Limpar Ranking
+            </button>
+          </div>
+          
+          <ul className="ranking-list">
+            {topPesquisas.map((item, index) => (
+              <li 
+                key={item.id} 
+            
+                className={`ranking-item ${index === 0 ? 'first-place' : ''}`}
+              >
+                <div className="ranking-info">
+                  <span className="ranking-position">
+                    {index + 1}º
+                  </span>
+                  <span 
+                    className="ranking-name ranking-link" 
+                    onClick={() => realizarConsulta(item.id)}
+                    title={`Recalcular barema de ${item.nome}`}
+                  >
+                    {item.nome}
+                  </span>
+                </div>
+                
+                <div className="ranking-score">
+                  {formatNumber(item.pontuacao)} <span className="ranking-score-label">pts</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+          
+        </section>
+      )}
+
+     {/* Rodapé */}
       <footer className="footer panel">
         <div className="footer-grid">
           <div>
             <h2>Desenvolvedores:</h2>
-            <p>Abel Galvão, Alex Júnior e Bruno Campos</p>
+            <p>
+              <a className="soft-link" href="https://github.com/argalvao" target="_blank" rel="noopener noreferrer">Abel Galvão</a>,{' '}
+              <a className="soft-link" href="https://github.com/Oguelo" target="_blank" rel="noopener noreferrer">Alex Júnior</a> e{' '}
+              <a className="soft-link" href="https://github.com/BRCZ1N" target="_blank" rel="noopener noreferrer">Bruno Campos</a>
+            </p>
             <h2 style={{ marginTop: '24px' }}>Agradecimentos:</h2>
             <p>Ao professor Mirco Ragni por fornecer a ideia por trás para a coleta de dados do Lattes.</p>
           </div>
