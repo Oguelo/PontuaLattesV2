@@ -1,111 +1,131 @@
+"""
+Scraping das páginas públicas do Lattes (CNPq).
+
+O usuário fornece o código alfanumérico do currículo (ex: K8981454J6),
+visível na URL ao acessar o Lattes logado. O CAPTCHA só aparece na rota
+de busca por número público — as rotas preview.do e graficos.do são livres.
+"""
+
+import ast
 import re
-from urllib.parse import urlparse
+import time
 
 import requests
 
 
 DEFAULT_HEADERS = {
-	"User-Agent": (
-		"Mozilla/5.0 (X11; Linux x86_64) "
-		"AppleWebKit/537.36 (KHTML, like Gecko) "
-		"Chrome/123.0.0.0 Safari/537.36"
-	),
-	"Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-	"Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-	"Connection": "close",
+    "User-Agent": (
+        "Mozilla/5.0 (X11; Linux x86_64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/123.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Connection": "close",
 }
 
-
-def _extrair_codigo_publico(url):
-	url = str(url or "").strip()
-	if not url:
-		return None
-
-	if re.fullmatch(r"\d+", url):
-		return url
-
-	url_parse = url if re.match(r"^https?://", url, re.IGNORECASE) else f"https://{url}"
-	parsed = urlparse(url_parse)
-	host = (parsed.netloc or "").lower()
-	path = (parsed.path or "").strip("/")
-
-	if host.endswith("lattes.cnpq.br") and re.fullmatch(r"\d+", path):
-		return path
-
-	return None
+MAX_RETRIES = 5
+RETRY_DELAY = 2
 
 
-def _normalizar_url(Url):
-	Url = str(Url or "").strip()
-	if not Url:
-		return Url
-
-	codigo_publico = _extrair_codigo_publico(Url)
-	if codigo_publico:
-		return f"http://lattes.cnpq.br/{codigo_publico}"
-
-	if re.fullmatch(r"\d+", Url):
-		return f"http://lattes.cnpq.br/{Url}"
-
-	if re.match(r"^lattes\.cnpq\.br/\d+$", Url, re.IGNORECASE):
-		return f"http://{Url}"
-
-	if not re.match(r"^https?://", Url, re.IGNORECASE):
-		return f"https://{Url}"
-
-	return Url
+def _criar_sessao() -> requests.Session:
+    """Cria uma sessão com cookies válidos do buscatextual."""
+    session = requests.Session()
+    try:
+        session.get(
+            "http://buscatextual.cnpq.br/buscatextual/",
+            headers=DEFAULT_HEADERS,
+            timeout=15,
+        )
+    except requests.RequestException:
+        pass
+    return session
 
 
-# Encontra o index único atribuido pela plataforma LATTES
-def getLattesCode(Url):
-	html = None
-	Url = _normalizar_url(Url)
+def _validar_codigo(code: str) -> str | None:
+    """
+    Aceita:
+      - Código alfanumérico direto:  K8981454J6
+      - URL completa do visualizacv: http://buscatextual.cnpq.br/buscatextual/visualizacv.do?id=K8981454J6
+    Rejeita número público (só dígitos) — requer CAPTCHA.
+    """
+    code = str(code or "").strip()
+    if not code:
+        return None
 
-	for _ in range(5):
-		try:
-			response = requests.get(Url, headers=DEFAULT_HEADERS, timeout=15)
-			response.raise_for_status()
-			html = response.text
-			break
-		except requests.RequestException as e:
-			return str(e)
+    # Extrai id= de uma URL completa
+    match = re.search(r"[?&]id=([A-Za-z0-9]+)", code)
+    if match:
+        return match.group(1)
 
-	Txt = '<input type="hidden" name="id" value="'
-	Str = html.find(Txt) + len(Txt) if html is not None else len(Txt) - 1
-	End = html.find('"', Str) if html is not None else -1
-	return html[Str:End] if html and Str >= len(Txt) and End != -1 else ""
+    # Código alfanumérico puro (letra + dígitos + letra no final)
+    if re.fullmatch(r"[A-Za-z][A-Za-z0-9]+", code) and not code.isdigit():
+        return code
 
-
-# Encontra o HTML da página do preview
-def getLattesPViewHtml(code):
-	html = None
-	Url = f"http://buscatextual.cnpq.br/buscatextual/preview.do?metodo=apresentar&id={code}"
-
-	for _ in range(5):
-		try:
-			response = requests.get(Url, headers=DEFAULT_HEADERS, timeout=15)
-			response.raise_for_status()
-			response.encoding = "ISO-8859-1"
-			html = response.text
-			break
-		except requests.RequestException:
-			continue
-
-	return html
+    return None
 
 
-# Encontra o HTML da página dos indices de produção
-def getLattesIndexHtml(code):
-	html = None
-	Url = f"http://buscatextual.cnpq.br/buscatextual/graficos.do?metodo=apresentar&codRHCript={code}"
+def getLattesPViewHtml(code: str, session: requests.Session | None = None) -> str | None:
+    """Retorna o HTML da página de preview do currículo."""
+    session = session or _criar_sessao()
+    url = f"http://buscatextual.cnpq.br/buscatextual/preview.do?metodo=apresentar&id={code}"
 
-	for _ in range(1):
-		try:
-			response = requests.get(Url, headers=DEFAULT_HEADERS, timeout=15)
-			response.raise_for_status()
-			html = response.text
-			break
-		except requests.RequestException:
-			continue
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = session.get(url, headers=DEFAULT_HEADERS, timeout=15)
+            response.raise_for_status()
+            response.encoding = "ISO-8859-1"
+            return response.text
+        except requests.RequestException:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY)
+            continue
 
-	return html
+    return None
+
+
+def getLattesIndexHtml(code: str, session: requests.Session | None = None) -> str | None:
+    """Retorna o HTML da página de índices de produção (graficos.do)."""
+    session = session or _criar_sessao()
+    url = f"http://buscatextual.cnpq.br/buscatextual/graficos.do?metodo=apresentar&codRHCript={code}"
+
+    for attempt in range(MAX_RETRIES):
+        try:
+            response = session.get(url, headers=DEFAULT_HEADERS, timeout=15)
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException:
+            if attempt < MAX_RETRIES - 1:
+                time.sleep(RETRY_DELAY)
+            continue
+
+    return None
+
+
+def extrair_variaveis_js(html: str) -> dict:
+    """Extrai arrays JavaScript da página de índices."""
+    variaveis = {}
+    if not html:
+        return variaveis
+
+    for nome, conteudo in re.findall(r"var\s+([A-Za-z0-9_]+)\s*=\s*(\[.*?\]);", html, re.DOTALL):
+        array_text = re.sub(r"\bnull\b", "None", conteudo)
+        try:
+            variaveis[nome] = ast.literal_eval(array_text)
+        except (ValueError, SyntaxError):
+            continue
+
+    return variaveis
+
+
+def extrair_nome(preview_html: str) -> str | None:
+    """Extrai o nome do pesquisador do HTML de preview."""
+    if not preview_html:
+        return None
+
+    match = re.search(r"var\s+nome\s*=\s*'([^']+)'", preview_html, re.IGNORECASE)
+    if match:
+        from html import unescape
+        return unescape(match.group(1)).strip()
+
+    return None
