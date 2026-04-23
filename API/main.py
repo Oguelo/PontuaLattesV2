@@ -235,13 +235,25 @@ class ICCollectHandler(BaseHTTPRequestHandler):
             return
 
         elif self.path == "/api/lattes":
-            url_lattes = str(payload.get("url") or "").strip()
-            if not url_lattes:
-                self._send_json({"success": False, "message": "Informe a URL completa ou o código.", "code": None}, HTTPStatus.BAD_REQUEST)
+            # Aceita o código alfanumérico do Lattes (ex: K8981454J6)
+            # visível na URL ao acessar o currículo logado no Lattes
+            code_input = str(payload.get("code") or payload.get("url") or "").strip()
+            if not code_input:
+                self._send_json(
+                    {
+                        "success": False,
+                        "message": (
+                            "Informe o código alfanumérico do currículo no campo 'code' "
+                            "(ex: K8981454J6). Ele aparece na URL ao acessar o Lattes logado."
+                        ),
+                        "code": None,
+                    },
+                    HTTPStatus.BAD_REQUEST,
+                )
                 return
 
             try:
-                resultado = buscaLattes(url_lattes)
+                resultado = buscaLattes(code_input)
                 status = HTTPStatus.OK if resultado.get("success") else HTTPStatus.BAD_GATEWAY
                 self._send_json(resultado, status)
             except Exception as exc:
