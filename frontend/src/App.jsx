@@ -1,20 +1,19 @@
 import { createBrowserRouter } from "react-router-dom";
 import Home from "./Home";
 import Login from "./pages/login";
-import Register from "./pages/register";
-
+import Private from "./routes/Private";
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Home />,
+    element: (
+      <Private>
+        <Home />
+      </Private>
+    ),
   },
   {
     path: "/login",
     element: <Login />,
-  },
-  {
-    path: "/register",
-    element: <Register />,
   },
 ]);
 
