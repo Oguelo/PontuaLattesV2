@@ -525,6 +525,33 @@ pre {
     gap: 20px;
 }
 
+.footer-section {
+    display: grid;
+    gap: 8px;
+}
+
+.footer-divider {
+    border: 0;
+    border-top: 1px solid rgba(148, 163, 184, 0.22);
+    margin: 18px 0;
+}
+
+.footer-link {
+    color: #7dd3fc;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.footer-link:hover {
+    text-decoration: underline;
+}
+
+.chart-box {
+    position: relative;
+    width: 100%;
+    min-height: 320px;
+}
+
 /* --- SEÇÃO DE RANKING (Histórico) --- */
 .ranking-panel {
   margin-top: 40px;
