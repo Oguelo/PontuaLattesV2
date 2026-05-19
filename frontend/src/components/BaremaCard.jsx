@@ -73,7 +73,7 @@ const BaremaSection = ({ title, section, maxLabel }) => {
     );
 };
 
-// --- Componente Principal ---
+
 export default function BaremaCard({ barema }) {
     if (!barema) return null;
 

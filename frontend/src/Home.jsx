@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import BaremaCard from './components/BaremaCard';
 import logoUefs from './assets/logoUefs.png'; 
+import aeriLogo from './assets/aeriLogo.png';
+import pppgLogo from './assets/pppgLogo.png';
 
 const getCurrentBaremaYear = () => new Date().getFullYear();
 const formatNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
@@ -9,14 +11,15 @@ const formatNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { max
 export default function Home() {
   const currentYear = getCurrentBaremaYear();
   const [url, setUrl] = useState('');
+  
+
+  const [tipoBarema, setTipoBarema] = useState('pppg'); 
+  
   const [status, setStatus] = useState({ type: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
-  
- 
   const [topPesquisas, setTopPesquisas] = useState([]);
 
-  
   useEffect(() => {
     const historicoSalvo = localStorage.getItem('rankingLattes');
     if (historicoSalvo) {
@@ -24,19 +27,27 @@ export default function Home() {
     }
   }, []);
 
+ 
+  useEffect(() => {
+    setResultado(null);
+    setStatus({ type: '', message: '' });
+  }, [tipoBarema]);
+
   const realizarConsulta = async (termoDeBusca) => {
     if (!termoDeBusca) return;
 
     setLoading(true);
-    setStatus({ type: 'info', message: 'Consultando a API e coletando os dados do currículo...' });
+    setStatus({ type: 'info', message: `Consultando a API para o barema ${tipoBarema.toUpperCase()}...` });
     setResultado(null);
   
     setUrl(termoDeBusca); 
-
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
-      const response = await axios.post('/api/lattes', { url: termoDeBusca });
+      const response = await axios.post('/api/lattes', { 
+        url: termoDeBusca,
+        tipo: tipoBarema 
+      });
       
       if (response.data && response.data.success) {
         setResultado(response.data);
@@ -55,11 +66,7 @@ export default function Home() {
     }
   };
 
-  
-
   const atualizarRanking = (novoDado, termoPesquisado) => {
-    
-  
     const pedacosUrl = termoPesquisado.split('/');
     const idLimpo = pedacosUrl[pedacosUrl.length - 1].trim();
 
@@ -98,7 +105,6 @@ export default function Home() {
 
   return (
     <main className="page">
-      {/* Seção Hero Responsiva */}
       <section className="hero hero-responsive">
         <div className="hero-text-container"> 
           <span className="hero-badge">
@@ -106,9 +112,9 @@ export default function Home() {
           </span>
           <h1>PontuaLattes</h1>
           <p className="hero-lead">
-            Sistema que analisa o currículo Lattes e organiza automaticamente o barema para apoiar a avaliação de candidatos a bolsas de Iniciação Científica da UEFS.
+            Sistema que analisa o currículo Lattes e organiza automaticamente o barema para apoiar a avaliação de candidatos a bolsas da UEFS.
           </p>
-          <div className="hero-meta">
+          <div className="hero-meta" div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap',marginTop:'50px', marginRight:'100px'}}>
             <a 
               className="hero-link" 
               href={`http://www.pppg.uefs.br/arquivos/File/editais/IC/${currentYear}/Edital_IC_UEFS_${currentYear}.pdf`} 
@@ -117,26 +123,84 @@ export default function Home() {
             >
               Ver edital IC UEFS {currentYear}
             </a>
+            <a //trocar o link para a aeri se tiver
+              className="hero-link" 
+              href={`http://www.pppg.uefs.br/arquivos/File/editais/IC/${currentYear}/Edital_IC_UEFS_${currentYear}.pdf`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              Ver edital AERI UEFS {currentYear}
+            </a>
+
           </div>
         </div>
 
-        <img 
-          src={logoUefs} 
-          alt="logoUefs" 
-          style={{ 
-            maxWidth: '200px',
-            width: '100%',
-            height: 'auto',         
-            borderRadius: '12px',   
-            flexShrink: 0,          
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-          }} 
-        />
+        {/* Container vertical para alinhar a logo principal em cima e as outras embaixo */}
+<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
+  
+  
+  <img 
+    src={logoUefs} 
+    alt="logoUefs" 
+    style={{ 
+      maxWidth: '200px',
+      width: '100%',
+      height: 'auto',         
+      borderRadius: '12px',   
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+    }} 
+  />
+
+  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+    
+   
+    <img 
+      src={pppgLogo} 
+      alt="Logo PPPG" 
+      style={{ 
+        maxWidth: '94px',
+        width: '100%',
+        height: 'auto',         
+        borderRadius: '8px',   
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+      }} 
+    />
+
+   
+    <img 
+      src={aeriLogo} 
+      alt="Logo AERI" 
+      style={{ 
+        maxWidth: '94px', 
+        width: '100%',
+        height: '50px ',         
+        borderRadius: '8px',   
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        marginTop: '24px',
+      }} 
+    />
+
+  </div>
+</div>
       </section>
 
-      {/* Seção do Formulário */}
       <section className="panel form-panel">
         <form onSubmit={buscarLattes}>
+
+          <div style={{ marginBottom: '16px' }}>
+            <label className="hero-text-container"   htmlFor="tipo-barema">Selecione o edital / tipo de Barema </label>
+            <select
+              className="hero-type-list"
+              id="tipo-barema"
+              value={tipoBarema}
+              onChange={(e) => setTipoBarema(e.target.value)}
+              
+            >
+              <option value="pppg">PPPG (Pesquisa / Iniciação Científica)</option>
+              <option value="aeri">AERI (Relações Internacionais / Intercâmbio)</option>
+            </select>
+          </div>
+
           <div>
             <label htmlFor="lattes-url">URL completa ou código do currículo Lattes</label>
             <div className="input-row">
@@ -163,14 +227,13 @@ export default function Home() {
         </form>
       </section>
 
-      {/* Resultados Atuais */}
       {resultado && resultado.barema && (
         <section id="results" className="results visible">
           <div className="summary">
             <article className="panel stat-card">
-              <h2>Total do barema</h2>
+              <h2>Total do barema ({tipoBarema.toUpperCase()})</h2>
               <div className="stat-value">{formatNumber(resultado.barema.total_limitado)}</div>
-              <div className="stat-label">Pontuação máxima: 60 pontos</div>
+              <div className="stat-label">Pontuação máxima: {tipoBarema === 'pppg' ? '60' : '100'} pontos</div>
             </article>
             <article className="panel stat-card">
               <h2>Total de publicações</h2>
@@ -190,12 +253,8 @@ export default function Home() {
         </section>
       )}
 
-  
-   
       {topPesquisas.length > 0 && (
-        
         <section className="panel ranking-panel">
-          
           <div className="ranking-header">
             <h2 style={{ margin: 0 }}>Top 5 Pontuações Pesquisadas</h2>
             <button 
@@ -210,7 +269,6 @@ export default function Home() {
             {topPesquisas.map((item, index) => (
               <li 
                 key={item.id} 
-            
                 className={`ranking-item ${index === 0 ? 'first-place' : ''}`}
               >
                 <div className="ranking-info">
@@ -232,11 +290,9 @@ export default function Home() {
               </li>
             ))}
           </ul>
-          
         </section>
       )}
 
-     {/* Rodapé */}
       <footer className="footer panel">
         <div className="footer-grid">
           <div>
