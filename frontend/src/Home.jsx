@@ -125,11 +125,11 @@ export default function Home() {
             </a>
             <a //trocar o link para a aeri se tiver
               className="hero-link" 
-              href={`http://www.pppg.uefs.br/arquivos/File/editais/IC/${currentYear}/Edital_IC_UEFS_${currentYear}.pdf`} 
+              href={`https://aeri.uefs.br/tag/editais-abertos/`} 
               target="_blank" 
               rel="noopener noreferrer"
             >
-              Ver edital AERI UEFS {currentYear}
+              Ver editais AERI UEFS
             </a>
 
           </div>
