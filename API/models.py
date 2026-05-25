@@ -84,6 +84,11 @@ class Barema(BaseModel):
     )
     code = CharField(max_length=64, null=True, index=True)
     nome = TextField(null=True)
+
+    # Tipo de barema: "professor" ou "aeri"
+    tipo = CharField(max_length=20, default="professor")
+
+    # ── Barema Professor ──────────────────────────────────────────────────
     titulacao_bruto = FloatField(default=0)
     titulacao_limitado = FloatField(default=0)
     producao_bruto = FloatField(default=0)
@@ -92,6 +97,18 @@ class Barema(BaseModel):
     formacao_limitado = FloatField(default=0)
     eventos_bruto = FloatField(default=0)
     eventos_limitado = FloatField(default=0)
+
+    # ── Barema AERI ───────────────────────────────────────────────────────
+    participacao_eventos_bruto = FloatField(default=0)
+    participacao_eventos_limitado = FloatField(default=0)
+    producao_cientifica_bruto = FloatField(default=0)
+    producao_cientifica_limitado = FloatField(default=0)
+    lideranca_bruto = FloatField(default=0)
+    lideranca_limitado = FloatField(default=0)
+    programas_academicos_bruto = FloatField(default=0)
+    programas_academicos_limitado = FloatField(default=0)
+
+    # ── Comum ─────────────────────────────────────────────────────────────
     total_bruto = FloatField(default=0)
     total_limitado = FloatField(default=0)
     barema_json = TextField(null=True)

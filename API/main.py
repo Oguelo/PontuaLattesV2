@@ -236,8 +236,21 @@ class ICCollectHandler(BaseHTTPRequestHandler):
 
         elif self.path == "/api/lattes":
             # Aceita o código alfanumérico do Lattes (ex: K8981454J6)
-            # visível na URL ao acessar o currículo logado no Lattes
+            # Parâmetros:
+            #   code          — código alfanumérico (obrigatório)
+            #   tipo          — "professor" (padrão) ou "aeri"
+            #   data_ingresso — "AAAA-MM-DD" ou "AAAA" (recomendado para tipo="aeri")
             code_input = str(payload.get("code") or payload.get("url") or "").strip()
+            tipo = str(payload.get("tipo") or "professor").strip().lower()
+            data_ingresso = str(payload.get("data_ingresso") or "").strip() or None
+
+            if tipo not in ("professor", "aeri"):
+                self._send_json(
+                    {"success": False, "message": "Campo 'tipo' inválido. Use 'professor' ou 'aeri'."},
+                    HTTPStatus.BAD_REQUEST,
+                )
+                return
+
             if not code_input:
                 self._send_json(
                     {
@@ -253,15 +266,12 @@ class ICCollectHandler(BaseHTTPRequestHandler):
                 return
 
             try:
-                resultado = buscaLattes(code_input)
+                resultado = buscaLattes(code_input, tipo=tipo, data_ingresso=data_ingresso)
                 status = HTTPStatus.OK if resultado.get("success") else HTTPStatus.BAD_GATEWAY
                 self._send_json(resultado, status)
             except Exception as exc:
                 self._send_json(
-                    {
-                        "success": False,
-                        "message": f"Erro interno ao processar a consulta: {exc}",
-                    },
+                    {"success": False, "message": f"Erro interno ao processar a consulta: {exc}"},
                     HTTPStatus.INTERNAL_SERVER_ERROR,
                 )
             return

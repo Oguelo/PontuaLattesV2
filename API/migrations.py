@@ -5,11 +5,6 @@ Uso:
   python migrations.py            # aplica todas as migrations pendentes
   python migrations.py --status   # mostra o estado atual
   python migrations.py --rollback # desfaz a última migration aplicada
-
-Cada migration é uma função com o padrão:
-  def migration_NNNN_descricao(migrator): ...
-
-O histórico de migrations aplicadas é salvo na tabela schema_migrations.
 """
 
 import argparse
@@ -20,6 +15,7 @@ from datetime import datetime
 from peewee import (
     CharField,
     DateTimeField,
+    FloatField,
     Model,
     PostgresqlDatabase,
 )
@@ -27,9 +23,7 @@ from playhouse.migrate import PostgresqlMigrator, migrate
 
 # ── conexão ───────────────────────────────────────────────────────────────────
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql://localhost/iccollect"
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost/iccollect")
 
 
 def _build_db(url: str) -> PostgresqlDatabase:
@@ -82,16 +76,9 @@ def _mark_rolledback(name: str):
 
 
 # ── migrations ────────────────────────────────────────────────────────────────
-# Adicione novas migrations SEMPRE no final da lista.
-# Nunca altere ou remova uma migration já aplicada em produção.
-# ─────────────────────────────────────────────────────────────────────────────
 
 def migration_0001_initial_schema(migrator):
-    """
-    Cria as tabelas iniciais do projeto.
-    Equivale ao init_database() do database.py — só roda se as tabelas
-    ainda não existirem (safe=True no create_tables).
-    """
+    """Cria as tabelas iniciais do projeto."""
     from models import User, Session, Consulta, Barema
     db.create_tables([User, Session, Consulta, Barema], safe=True)
 
@@ -101,30 +88,58 @@ def migration_0001_initial_schema_rollback(migrator):
     db.drop_tables([Barema, Consulta, Session, User], safe=True)
 
 
-# Exemplo de migration futura — adicionar coluna:
-#
-# def migration_0002_consulta_add_ip(migrator):
-#     """Adiciona coluna ip_address na tabela consultas."""
-#     from peewee import CharField
-#     migrate(
-#         migrator.add_column("consultas", "ip_address", CharField(null=True, max_length=45))
-#     )
-#
-# def migration_0002_consulta_add_ip_rollback(migrator):
-#     migrate(migrator.drop_column("consultas", "ip_address"))
+def migration_0002_barema_add_aeri_fields(migrator):
+    """
+    Adiciona suporte ao barema AERI (Edital 02/2025) na tabela barema:
+      - coluna tipo (professor / aeri)
+      - 8 colunas para as 4 categorias do barema AERI
+    """
+    migrate(
+        migrator.add_column("barema", "tipo",
+            CharField(max_length=20, default="professor", null=True)),
+        migrator.add_column("barema", "participacao_eventos_bruto",
+            FloatField(default=0, null=True)),
+        migrator.add_column("barema", "participacao_eventos_limitado",
+            FloatField(default=0, null=True)),
+        migrator.add_column("barema", "producao_cientifica_bruto",
+            FloatField(default=0, null=True)),
+        migrator.add_column("barema", "producao_cientifica_limitado",
+            FloatField(default=0, null=True)),
+        migrator.add_column("barema", "lideranca_bruto",
+            FloatField(default=0, null=True)),
+        migrator.add_column("barema", "lideranca_limitado",
+            FloatField(default=0, null=True)),
+        migrator.add_column("barema", "programas_academicos_bruto",
+            FloatField(default=0, null=True)),
+        migrator.add_column("barema", "programas_academicos_limitado",
+            FloatField(default=0, null=True)),
+    )
 
 
-# ── registro de migrations ────────────────────────────────────────────────────
-# A ordem importa — migrations são aplicadas na ordem da lista.
+def migration_0002_barema_add_aeri_fields_rollback(migrator):
+    migrate(
+        migrator.drop_column("barema", "tipo"),
+        migrator.drop_column("barema", "participacao_eventos_bruto"),
+        migrator.drop_column("barema", "participacao_eventos_limitado"),
+        migrator.drop_column("barema", "producao_cientifica_bruto"),
+        migrator.drop_column("barema", "producao_cientifica_limitado"),
+        migrator.drop_column("barema", "lideranca_bruto"),
+        migrator.drop_column("barema", "lideranca_limitado"),
+        migrator.drop_column("barema", "programas_academicos_bruto"),
+        migrator.drop_column("barema", "programas_academicos_limitado"),
+    )
+
+
+# ── registro ──────────────────────────────────────────────────────────────────
 
 MIGRATIONS = [
     migration_0001_initial_schema,
-    # migration_0002_consulta_add_ip,  ← próximas entram aqui
+    migration_0002_barema_add_aeri_fields,
 ]
 
 ROLLBACKS = {
-    "migration_0001_initial_schema": migration_0001_initial_schema_rollback,
-    # "migration_0002_consulta_add_ip": migration_0002_consulta_add_ip_rollback,
+    "migration_0001_initial_schema":          migration_0001_initial_schema_rollback,
+    "migration_0002_barema_add_aeri_fields":   migration_0002_barema_add_aeri_fields_rollback,
 }
 
 
@@ -157,22 +172,17 @@ def run_migrations():
 def show_status():
     _ensure_migrations_table()
     applied = _applied()
-
-    print(f"{'Migration':<50} {'Status'}")
-    print("-" * 60)
+    print(f"{'Migration':<55} {'Status'}")
+    print("-" * 65)
     for m in MIGRATIONS:
         status = "✅ aplicada" if m.__name__ in applied else "⏳ pendente"
-        print(f"{m.__name__:<50} {status}")
+        print(f"{m.__name__:<55} {status}")
 
 
 def run_rollback():
     _ensure_migrations_table()
     applied = _applied()
-
-    applied_in_order = [
-        m for m in reversed(MIGRATIONS)
-        if m.__name__ in applied
-    ]
+    applied_in_order = [m for m in reversed(MIGRATIONS) if m.__name__ in applied]
 
     if not applied_in_order:
         print("Nenhuma migration aplicada para desfazer.")
