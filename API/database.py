@@ -182,17 +182,25 @@ def registrar_barema(
     nome: str | None,
     barema_resultado: dict,
 ) -> None:
-    """Insere ou atualiza o barema de um currículo (chave: code)."""
+    """Insere ou atualiza o barema de um currículo (chave: code + tipo)."""
     if not (consulta_id and code and barema_resultado and barema_resultado.get("success")):
         return
 
     def _sub(key: str, subkey: str, default: float = 0) -> float:
         return barema_resultado.get(key, {}).get(subkey, default)
 
+    tipo = barema_resultado.get("tipo", "professor")
+
     data = {
         "consulta_id": consulta_id,
         "code": code,
         "nome": nome or "",
+        "tipo": tipo,
+        "total_bruto":    barema_resultado.get("total_bruto", 0),
+        "total_limitado": barema_resultado.get("total_limitado", 0),
+        "barema_json":    json.dumps(barema_resultado, ensure_ascii=False),
+        "updated_at":     _now(),
+        # professor
         "titulacao_bruto":    _sub("titulacao", "subtotal_bruto"),
         "titulacao_limitado": _sub("titulacao", "subtotal_limitado"),
         "producao_bruto":     _sub("producao", "subtotal_bruto"),
@@ -201,13 +209,20 @@ def registrar_barema(
         "formacao_limitado":  _sub("formacao_recursos_humanos", "subtotal_limitado"),
         "eventos_bruto":      _sub("participacao_eventos_comite", "subtotal_bruto"),
         "eventos_limitado":   _sub("participacao_eventos_comite", "subtotal_limitado"),
-        "total_bruto":    barema_resultado.get("total_bruto", 0),
-        "total_limitado": barema_resultado.get("total_limitado", 0),
-        "barema_json":    json.dumps(barema_resultado, ensure_ascii=False),
-        "updated_at":     _now(),
+        # aeri
+        "participacao_eventos_bruto":     _sub("participacao_eventos", "subtotal_bruto"),
+        "participacao_eventos_limitado":  _sub("participacao_eventos", "subtotal_limitado"),
+        "producao_cientifica_bruto":      _sub("producao_cientifica", "subtotal_bruto"),
+        "producao_cientifica_limitado":   _sub("producao_cientifica", "subtotal_limitado"),
+        "lideranca_bruto":                _sub("lideranca_estudantil", "subtotal_bruto"),
+        "lideranca_limitado":             _sub("lideranca_estudantil", "subtotal_limitado"),
+        "programas_academicos_bruto":     _sub("programas_academicos", "subtotal_bruto"),
+        "programas_academicos_limitado":  _sub("programas_academicos", "subtotal_limitado"),
     }
     with db.connection_context():
-        existing = Barema.get_or_none(Barema.code == code)
+        existing = Barema.get_or_none(
+            (Barema.code == code) & (Barema.tipo == tipo)
+        )
         if existing:
             Barema.update(data).where(Barema.id == existing.id).execute()
         else:

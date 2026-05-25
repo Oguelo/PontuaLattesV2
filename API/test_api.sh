@@ -50,28 +50,59 @@ R=$(curl -s -X POST "$BASE/api/login" \
   -d '{"username": "admin", "password": "errada"}')
 check "POST /api/login — senha errada → 401" "$R" '"success": false'
 
-section "4. Busca Lattes — código válido"
+section "4. Busca Lattes — tipo professor (padrão)"
 R=$(curl -s -X POST "$BASE/api/lattes" \
   -H "Content-Type: application/json" \
-  -d '{"code": "K8981454J6"}')
-check "POST /api/lattes — coleta realizada" "$R" '"success": true'
-check "POST /api/lattes — barema calculado" "$R" '"message": "Barema calculado com sucesso."'
-check "POST /api/lattes — nome extraído"   "$R" '"nome":'
-check "POST /api/lattes — publicações"     "$R" '"publicacoes":'
+  -d '{"code": "K8981454J6", "tipo": "professor"}')
+check "POST /api/lattes professor — coleta realizada"   "$R" '"success": true'
+check "POST /api/lattes professor — barema calculado"   "$R" '"Barema calculado com sucesso."'
+check "POST /api/lattes professor — tipo correto"       "$R" '"tipo": "professor"'
+check "POST /api/lattes professor — nome extraído"      "$R" '"nome":'
+check "POST /api/lattes professor — publicações"        "$R" '"publicacoes":'
+check "POST /api/lattes professor — total_limitado"     "$R" '"total_limitado":'
 
-section "5. Busca Lattes — código inválido (número público)"
+section "5. Busca Lattes — tipo AERI com data de ingresso"
+R=$(curl -s -X POST "$BASE/api/lattes" \
+  -H "Content-Type: application/json" \
+  -d '{"code": "K8981454J6", "tipo": "aeri", "data_ingresso": "2022"}')
+check "POST /api/lattes aeri — coleta realizada"        "$R" '"success": true'
+check "POST /api/lattes aeri — barema calculado"        "$R" '"Barema Lattes calculado com sucesso."'
+check "POST /api/lattes aeri — tipo correto"            "$R" '"tipo": "aeri"'
+check "POST /api/lattes aeri — edital correto"          "$R" '"02/2025 AERI/UEFS"'
+check "POST /api/lattes aeri — ano minimo considerado"  "$R" '"ano_minimo_considerado": 2022'
+check "POST /api/lattes aeri — participacao_eventos"    "$R" '"participacao_eventos":'
+check "POST /api/lattes aeri — producao_cientifica"     "$R" '"producao_cientifica":'
+check "POST /api/lattes aeri — lideranca_estudantil"    "$R" '"lideranca_estudantil":'
+check "POST /api/lattes aeri — programas_academicos"    "$R" '"programas_academicos":'
+check "POST /api/lattes aeri — aviso lideranca"         "$R" '"aviso":'
+check "POST /api/lattes aeri — total_limitado"          "$R" '"total_limitado":'
+
+section "6. Busca Lattes — tipo AERI sem data de ingresso"
+R=$(curl -s -X POST "$BASE/api/lattes" \
+  -H "Content-Type: application/json" \
+  -d '{"code": "K8981454J6", "tipo": "aeri"}')
+check "POST /api/lattes aeri sem data — usa últimos 5 anos" "$R" '"success": true'
+check "POST /api/lattes aeri sem data — observacao presente" "$R" 'Data de ingresso não informada'
+
+section "7. Busca Lattes — tipo inválido"
+R=$(curl -s -X POST "$BASE/api/lattes" \
+  -H "Content-Type: application/json" \
+  -d '{"code": "K8981454J6", "tipo": "invalido"}')
+check "POST /api/lattes — tipo inválido → 400" "$R" '"success": false'
+
+section "8. Busca Lattes — código inválido (número público)"
 R=$(curl -s -X POST "$BASE/api/lattes" \
   -H "Content-Type: application/json" \
   -d '{"code": "0254977009739288"}')
 check "POST /api/lattes — código inválido → erro" "$R" '"success": false'
 
-section "6. Busca Lattes — sem código"
+section "9. Busca Lattes — sem código"
 R=$(curl -s -X POST "$BASE/api/lattes" \
   -H "Content-Type: application/json" \
   -d '{}')
 check "POST /api/lattes — sem código → 400" "$R" '"success": false'
 
-section "7. Endpoints autenticados"
+section "10. Endpoints autenticados"
 R=$(curl -s "$BASE/api/consultas/resumo" -H "Authorization: Bearer $TOKEN")
 check "GET /api/consultas/resumo" "$R" '"success": true'
 
@@ -84,17 +115,17 @@ check "GET /api/consultas/top5" "$R" '"dados":'
 R=$(curl -s "$BASE/api/consultas/dia" -H "Authorization: Bearer $TOKEN")
 check "GET /api/consultas/dia" "$R" '"dados":'
 
-section "8. Endpoints autenticados sem token"
+section "11. Endpoints autenticados sem token"
 R=$(curl -s "$BASE/api/consultas/resumo")
 check "GET /api/consultas/resumo sem token → 401" "$R" '"success": false'
 
-section "9. Register bloqueado"
+section "12. Register bloqueado"
 R=$(curl -s -X POST "$BASE/api/register" \
   -H "Content-Type: application/json" \
   -d '{"username": "teste", "password": "123"}')
 check "POST /api/register → 403" "$R" '"success": false'
 
-section "10. Logout e invalidação do token"
+section "13. Logout e invalidação do token"
 R=$(curl -s -X POST "$BASE/api/logout" -H "Authorization: Bearer $TOKEN")
 check "POST /api/logout" "$R" '"success": true'
 
