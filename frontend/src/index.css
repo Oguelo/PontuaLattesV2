@@ -235,6 +235,17 @@ label {
     margin-bottom: 8px;
 }
 
+.field-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+}
+
+.field {
+    display: grid;
+    gap: 8px;
+}
+
 .input-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -252,7 +263,23 @@ input {
     outline: none;
 }
 
+select {
+    width: 100%;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 14px;
+    padding: 15px 16px;
+    font-size: 1rem;
+    background: rgba(15, 23, 42, 0.7);
+    color: var(--text);
+    outline: none;
+}
+
 input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.16);
+}
+
+select:focus {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.16);
 }
