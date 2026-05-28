@@ -22,6 +22,12 @@ function getMaximumAllowedLabel(title, titulacao) {
   return '-';
 }
 
+function getMaximumAllowedLabelFromLimit(section) {
+  if (section?.limite === 0) return '0';
+  if (!section?.limite) return '-';
+  return formatNumber(section.limite);
+}
+
 function buildTitulationSection(titulacao) {
   const nivelMaximo = titulacao?.nivel_maximo || 'Nao identificado';
   const isDoutorado = nivelMaximo === 'Doutorado';
@@ -45,15 +51,16 @@ function buildTitulationSection(titulacao) {
   };
 }
 
-function BaremaSection({ title, section, maximumAllowedLabel }) {
-  const itens = Object.entries(section.itens || {});
+function BaremaSection({ title, section, maximumAllowedLabel, note }) {
+  const safeSection = section || {};
+  const itens = Object.entries(safeSection.itens || {});
 
   return (
     <div className="barema-card">
       <div className="barema-card-header">
         <h3>{title}</h3>
         <div className="barema-card-total">
-          <span>Pontuacao encontrada: {formatNumber(section.subtotal_bruto)}</span>
+          <span>Pontuacao encontrada: {formatNumber(safeSection.subtotal_bruto)}</span>
           <span>Maximo permitido: {maximumAllowedLabel}</span>
         </div>
       </div>
@@ -84,15 +91,30 @@ function BaremaSection({ title, section, maximumAllowedLabel }) {
       ) : (
         <p className="barema-empty">Sem itens detalhados.</p>
       )}
+
+      {note && <p className="barema-empty">{note}</p>}
     </div>
   );
 }
 
-export default function BaremaCard({ barema }) {
-  if (!barema || !barema.success) {
-    return <div className="publication-item">Barema nao disponivel.</div>;
+function BaremaObservations({ observacoes }) {
+  if (!observacoes || observacoes.length === 0) {
+    return null;
   }
 
+  return (
+    <div className="barema-observations">
+      <h3>Observacoes</h3>
+      <ul className="details-list">
+        {observacoes.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function BaremaCardProfessor({ barema }) {
   const observacoes = barema.observacoes || [];
 
   return (
@@ -145,18 +167,92 @@ export default function BaremaCard({ barema }) {
         />
       </div>
 
-      <div className="barema-observations">
-        {observacoes.length > 0 && (
-          <>
-            <h3>Observacoes</h3>
-            <ul className="details-list">
-              {observacoes.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </>
-        )}
-      </div>
+      <BaremaObservations observacoes={observacoes} />
     </>
   );
+}
+
+function BaremaCardAeri({ barema }) {
+  const observacoes = barema.observacoes || [];
+
+  const sections = [
+    {
+      key: 'participacao_eventos',
+      title: '3.1 Participacao/organizacao em eventos',
+    },
+    {
+      key: 'producao_cientifica',
+      title: '3.2 Producao cientifica/tecnologica',
+    },
+    {
+      key: 'lideranca_estudantil',
+      title: '3.3 Representacao/lideranca estudantil',
+    },
+    {
+      key: 'programas_academicos',
+      title: '3.4 Programas academicos/estagios',
+    },
+  ];
+
+  return (
+    <>
+      <div className="barema-summary">
+        <div className="barema-highlight-grid">
+          <div className="barema-highlight-item">
+            <span className="barema-highlight-label">Participacao</span>
+            <strong>{formatNumber(barema.participacao_eventos?.subtotal_limitado)}</strong>
+          </div>
+          <div className="barema-highlight-item">
+            <span className="barema-highlight-label">Producao cientifica</span>
+            <strong>{formatNumber(barema.producao_cientifica?.subtotal_limitado)}</strong>
+          </div>
+          <div className="barema-highlight-item">
+            <span className="barema-highlight-label">Lideranca</span>
+            <strong>{formatNumber(barema.lideranca_estudantil?.subtotal_limitado)}</strong>
+          </div>
+          <div className="barema-highlight-item">
+            <span className="barema-highlight-label">Programas</span>
+            <strong>{formatNumber(barema.programas_academicos?.subtotal_limitado)}</strong>
+          </div>
+          <div className="barema-highlight-item barema-highlight-total">
+            <span className="barema-highlight-label">Total final</span>
+            <strong>{formatNumber(barema.total_limitado)}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="barema-sections">
+        {sections.map((section) => {
+          const data = barema[section.key] || {};
+          const maxLabel = data?.limite === undefined || data?.limite === null
+            ? '10'
+            : getMaximumAllowedLabelFromLimit(data);
+
+          return (
+            <BaremaSection
+              key={section.key}
+              title={section.title}
+              section={data}
+              maximumAllowedLabel={maxLabel}
+              note={data.aviso}
+            />
+          );
+        })}
+      </div>
+
+      <BaremaObservations observacoes={observacoes} />
+    </>
+  );
+}
+
+export default function BaremaCard({ barema }) {
+  if (!barema || !barema.success) {
+    return <div className="publication-item">Barema nao disponivel.</div>;
+  }
+
+  if (barema.tipo === 'aeri') {
+    return <BaremaCardAeri barema={barema} />;
+  }
+
+  return <BaremaCardProfessor barema={barema} />;
 }
