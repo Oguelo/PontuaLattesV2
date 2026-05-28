@@ -1,6 +1,6 @@
 import BaremaCard from './BaremaCard';
 
-function getMinimumBaremaYear() {
+function getDefaultBaremaYear() {
   return new Date().getFullYear() - 5;
 }
 
@@ -16,8 +16,17 @@ function getIndicadoresPublicacaoUrl(code) {
   return `http://buscatextual.cnpq.br/buscatextual/graficos.do?metodo=apresentar&codRHCript=${encodeURIComponent(value)}`;
 }
 
-function getFilteredPublicationSeries(publicacoes) {
-  const anoMinimo = getMinimumBaremaYear();
+function resolveAnoMinimo(barema) {
+  const parsed = Number(barema?.ano_minimo_considerado);
+
+  if (barema?.tipo === 'aeri' && Number.isInteger(parsed) && parsed > 0) {
+    return parsed;
+  }
+
+  return getDefaultBaremaYear();
+}
+
+function getFilteredPublicationSeries(publicacoes, anoMinimo) {
   const series = publicacoes?.series || [];
 
   return series
@@ -43,22 +52,27 @@ export default function ResultsSection({ resultado }) {
     return <section id="results" className="results" />;
   }
 
-  const anoMinimo = getMinimumBaremaYear();
+  const barema = resultado.barema || {};
+  const tipo = barema?.tipo || 'professor';
+  const anoMinimo = resolveAnoMinimo(barema);
   const anoAtual = getCurrentBaremaYear();
   const publicacoes = resultado.publicacoes || {};
-  const seriesPeriodo = getFilteredPublicationSeries(publicacoes);
+  const seriesPeriodo = getFilteredPublicationSeries(publicacoes, anoMinimo);
 
   const anosLimpos = (publicacoes.anos || [])
     .map((ano) => String(ano).trim())
     .filter((ano) => ano !== '' && !Number.isNaN(Number(ano)) && Number(ano) >= anoMinimo);
+
+  const totalMaximoLabel = tipo === 'aeri' ? '40 pontos' : '60 pontos';
+  const tituloBarema = tipo === 'aeri' ? 'Barema AERI' : 'Barema docente';
 
   return (
     <section id="results" className="results visible">
       <div className="summary">
         <article className="panel stat-card">
           <h2>Total do barema</h2>
-          <div id="stat-barema-total" className="stat-value">{resultado.barema?.total_limitado || 0}</div>
-          <div className="stat-label">Pontuacao maxima: 60 pontos</div>
+          <div id="stat-barema-total" className="stat-value">{barema?.total_limitado || 0}</div>
+          <div className="stat-label">Pontuacao maxima: {totalMaximoLabel}</div>
         </article>
 
         <article className="panel stat-card">
@@ -117,9 +131,9 @@ export default function ResultsSection({ resultado }) {
       </article>
 
       <article className="panel details-card">
-        <h2>Barema docente</h2>
+        <h2>{tituloBarema}</h2>
         <div id="barema-summary" className="barema-summary">
-          <BaremaCard barema={resultado.barema || null} />
+          <BaremaCard barema={barema || null} />
         </div>
       </article>
     </section>
