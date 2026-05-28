@@ -3,7 +3,6 @@ import axios from 'axios';
 import BaremaCard from './components/BaremaCard';
 import logoUefs from './assets/logoUefs.png'; 
 
-const getMinimumBaremaYear = () => new Date().getFullYear() - 5;
 const getCurrentBaremaYear = () => new Date().getFullYear();
 const formatNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 
