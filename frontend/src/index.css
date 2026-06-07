@@ -257,6 +257,14 @@ input:focus {
     box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.16);
 }
 
+.aeri-input-group {
+    margin-top: 16px;
+}
+
+.lattes-url-label-with-spacing {
+    margin-top: 16px;
+}
+
 button {
     border: none;
     border-radius: 14px;

@@ -1,0 +1,42 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.label {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0px;
+}
+
+.radioGroup {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    margin-bottom: 8px
+}
+
+.radioOption {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.radioInput {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    accent-color: #4a90e2;
+}
+
+.radioLabel {
+    font-size: 14px;
+    font-family: Arial, Helvetica, sans-serif;
+    cursor: pointer;
+    user-select: none;
+    margin: 8px;
+}

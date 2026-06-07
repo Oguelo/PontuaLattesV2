@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import BaremaCard from './components/BaremaCard';
 import logoUefs from './assets/logoUefs.png'; 
+import { RoleSelector } from './components/Selector/RoleSelector';
 
 const getCurrentBaremaYear = () => new Date().getFullYear();
 const formatNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
@@ -12,9 +13,15 @@ export default function Home() {
   const [status, setStatus] = useState({ type: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
+  const [searchType, setSearchType] = useState('aeri');
+
+  const [aeriEntryYear, setAeriEntryYear] = useState('');
+
   
  
   const [topPesquisas, setTopPesquisas] = useState([]);
+
+  const isAeriSelected = searchType === 'aeri';
 
   
   useEffect(() => {
@@ -56,9 +63,7 @@ export default function Home() {
   };
 
   
-
   const atualizarRanking = (novoDado, termoPesquisado) => {
-    
   
     const pedacosUrl = termoPesquisado.split('/');
     const idLimpo = pedacosUrl[pedacosUrl.length - 1].trim();
@@ -138,7 +143,24 @@ export default function Home() {
       <section className="panel form-panel">
         <form onSubmit={buscarLattes}>
           <div>
-            <label htmlFor="lattes-url">URL completa ou código do currículo Lattes</label>
+          <RoleSelector value={searchType} setValue={setSearchType} />
+
+          {isAeriSelected && (
+            <div className="aeri-input-group">
+              <label htmlFor="aeri-entry-year">Insira o ano de entrada na UEFS</label>
+              <input
+                id="aeri-entry-year"
+                type="number"
+                value={aeriEntryYear}
+                onChange={(e) => setAeriEntryYear(e.target.value)}
+                placeholder="Ex: 2020"
+                min={1900}
+                max={currentYear}
+              />
+            </div>
+          )}
+
+            <label htmlFor="lattes-url" className={isAeriSelected ? 'lattes-url-label-with-spacing' : ''}>URL completa ou código do currículo Lattes</label>
             <div className="input-row">
               <input
                 id="lattes-url"
