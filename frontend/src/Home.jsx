@@ -273,7 +273,7 @@ export default function Home() {
       )}
 
      {/* Rodapé */}
-      <footer className="footer panel">
+      {/* <footer className="footer panel">
         <div className="footer-grid">
           <div>
             <h2>Desenvolvedores:</h2>
@@ -286,7 +286,7 @@ export default function Home() {
             <p>Ao professor Mirco Ragni por fornecer a ideia por trás para a coleta de dados do Lattes.</p>
           </div>
         </div>
-      </footer>
+      </footer> */}
     </main>
   );
 }
