@@ -171,6 +171,7 @@ canvas {
     border-radius: 20px;
     backdrop-filter: blur(18px);
     box-shadow: var(--shadow);
+    margin-top: 24px;
 }
 
 .form-panel {
@@ -255,6 +256,14 @@ input {
 input:focus {
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.16);
+}
+
+.aeri-input-group {
+    margin-top: 16px;
+}
+
+.lattes-url-label-with-spacing {
+    margin-top: 16px;
 }
 
 button {

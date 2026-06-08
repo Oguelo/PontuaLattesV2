@@ -13,7 +13,7 @@ from peewee import (
 )
 from playhouse.pool import PooledPostgresqlDatabase
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost/iccollect")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://iccollect_user:CMoN6zutRRIfoXjwxgdiqXyzrdBOqa0M@dpg-d8a577ojo6nc73ee0isg-a.oregon-postgres.render.com/iccollect")
 
 
 def _build_db(url: str) -> PooledPostgresqlDatabase:

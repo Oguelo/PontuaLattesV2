@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import BaremaCard from './components/BaremaCard';
 import logoUefs from './assets/logoUefs.png'; 
+import { RoleSelector } from './components/Selector/RoleSelector';
 
 const getCurrentBaremaYear = () => new Date().getFullYear();
 const formatNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
@@ -12,9 +13,13 @@ export default function Home() {
   const [status, setStatus] = useState({ type: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
-  
+  const [searchType, setSearchType] = useState('aeri');
+
+  const [aeriEntryYear, setAeriEntryYear] = useState('');
  
   const [topPesquisas, setTopPesquisas] = useState([]);
+
+  const isAeriSelected = searchType === 'aeri';
 
   
   useEffect(() => {
@@ -24,9 +29,23 @@ export default function Home() {
     }
   }, []);
 
+  // Função responsável pelo payload de busca
+  const buildPayload = (code) => {
+    const payload = {
+      code: code,
+      tipo: searchType,
+    };
+
+    if (searchType === 'aeri' && aeriEntryYear) {
+      payload.data_ingresso = aeriEntryYear.toString();
+    }
+
+    return payload;
+  };
+
   const realizarConsulta = async (termoDeBusca) => {
     if (!termoDeBusca) return;
-
+    console.log('Realizando consulta:', buildPayload(termoDeBusca))
     setLoading(true);
     setStatus({ type: 'info', message: 'Consultando a API e coletando os dados do currículo...' });
     setResultado(null);
@@ -36,7 +55,7 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
-      const response = await axios.post('/api/lattes', { url: termoDeBusca });
+      const response = await axios.post('/api/lattes', buildPayload(termoDeBusca));
       
       if (response.data && response.data.success) {
         setResultado(response.data);
@@ -56,9 +75,7 @@ export default function Home() {
   };
 
   
-
   const atualizarRanking = (novoDado, termoPesquisado) => {
-    
   
     const pedacosUrl = termoPesquisado.split('/');
     const idLimpo = pedacosUrl[pedacosUrl.length - 1].trim();
@@ -138,7 +155,24 @@ export default function Home() {
       <section className="panel form-panel">
         <form onSubmit={buscarLattes}>
           <div>
-            <label htmlFor="lattes-url">URL completa ou código do currículo Lattes</label>
+          <RoleSelector value={searchType} setValue={setSearchType} />
+
+          {isAeriSelected && (
+            <div className="aeri-input-group">
+              <label htmlFor="aeri-entry-year">Insira o ano de entrada na UEFS</label>
+              <input
+                id="aeri-entry-year"
+                type="number"
+                value={aeriEntryYear}
+                onChange={(e) => setAeriEntryYear(e.target.value)}
+                placeholder="Ex: 2020"
+                min={1900}
+                max={currentYear}
+              />
+            </div>
+          )}
+
+            <label htmlFor="lattes-url" className={isAeriSelected ? 'lattes-url-label-with-spacing' : ''}>URL completa ou código do currículo Lattes</label>
             <div className="input-row">
               <input
                 id="lattes-url"
@@ -170,7 +204,9 @@ export default function Home() {
             <article className="panel stat-card">
               <h2>Total do barema</h2>
               <div className="stat-value">{formatNumber(resultado.barema.total_limitado)}</div>
-              <div className="stat-label">Pontuação máxima: 60 pontos</div>
+              <div className="stat-label">
+                Pontuação máxima: {resultado.barema.tipo === 'aeri' ? '40' : '60'} pontos
+              </div>
             </article>
             <article className="panel stat-card">
               <h2>Total de publicações</h2>
@@ -237,7 +273,7 @@ export default function Home() {
       )}
 
      {/* Rodapé */}
-      <footer className="footer panel">
+      {/* <footer className="footer panel">
         <div className="footer-grid">
           <div>
             <h2>Desenvolvedores:</h2>
@@ -250,7 +286,7 @@ export default function Home() {
             <p>Ao professor Mirco Ragni por fornecer a ideia por trás para a coleta de dados do Lattes.</p>
           </div>
         </div>
-      </footer>
+      </footer> */}
     </main>
   );
 }
