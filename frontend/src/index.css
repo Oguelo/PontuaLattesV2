@@ -171,6 +171,7 @@ canvas {
     border-radius: 20px;
     backdrop-filter: blur(18px);
     box-shadow: var(--shadow);
+    margin-top: 24px;
 }
 
 .form-panel {

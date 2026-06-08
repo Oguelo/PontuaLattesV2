@@ -16,8 +16,6 @@ export default function Home() {
   const [searchType, setSearchType] = useState('aeri');
 
   const [aeriEntryYear, setAeriEntryYear] = useState('');
-
-  
  
   const [topPesquisas, setTopPesquisas] = useState([]);
 
@@ -31,9 +29,23 @@ export default function Home() {
     }
   }, []);
 
+  // Função responsável pelo payload de busca
+  const buildPayload = (code) => {
+    const payload = {
+      code: code,
+      tipo: searchType,
+    };
+
+    if (searchType === 'aeri' && aeriEntryYear) {
+      payload.data_ingresso = aeriEntryYear.toString();
+    }
+
+    return payload;
+  };
+
   const realizarConsulta = async (termoDeBusca) => {
     if (!termoDeBusca) return;
-
+    console.log('Realizando consulta:', buildPayload(termoDeBusca))
     setLoading(true);
     setStatus({ type: 'info', message: 'Consultando a API e coletando os dados do currículo...' });
     setResultado(null);
@@ -43,7 +55,7 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
-      const response = await axios.post('/api/lattes', { url: termoDeBusca });
+      const response = await axios.post('/api/lattes', buildPayload(termoDeBusca));
       
       if (response.data && response.data.success) {
         setResultado(response.data);
@@ -192,7 +204,9 @@ export default function Home() {
             <article className="panel stat-card">
               <h2>Total do barema</h2>
               <div className="stat-value">{formatNumber(resultado.barema.total_limitado)}</div>
-              <div className="stat-label">Pontuação máxima: 60 pontos</div>
+              <div className="stat-label">
+                Pontuação máxima: {resultado.barema.tipo === 'aeri' ? '40' : '60'} pontos
+              </div>
             </article>
             <article className="panel stat-card">
               <h2>Total de publicações</h2>

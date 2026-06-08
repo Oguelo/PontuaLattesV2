@@ -428,6 +428,7 @@ def buscaLattes(code_input: str, tipo: str = "professor", data_ingresso: str | N
       tipo           — "professor" ou "aeri"
       data_ingresso  — "AAAA-MM-DD" ou "AAAA" (obrigatório para tipo="aeri")
     """
+    
     code = _validar_codigo(code_input)
     if not code:
         return {
