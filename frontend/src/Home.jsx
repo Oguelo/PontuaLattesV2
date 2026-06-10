@@ -1,27 +1,28 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import BaremaCard from './components/BaremaCard';
-import logoUefs from './assets/logoUefs.png'; 
-import { RoleSelector } from './components/Selector/RoleSelector';
+
+import Hero from './components/Hero';
+import LattesForm from './components/LattesForm';
+import Results from './components/Results';
+import Ranking from './components/Ranking';
+import Footer from './components/Footer';
 
 const getCurrentBaremaYear = () => new Date().getFullYear();
-const formatNumber = (value) => Number(value || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 
 export default function Home() {
   const currentYear = getCurrentBaremaYear();
+  
   const [url, setUrl] = useState('');
   const [status, setStatus] = useState({ type: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [searchType, setSearchType] = useState('aeri');
-
   const [aeriEntryYear, setAeriEntryYear] = useState('');
- 
   const [topPesquisas, setTopPesquisas] = useState([]);
 
   const isAeriSelected = searchType === 'aeri';
 
-  
+  // Lógica do Ranking
   useEffect(() => {
     const historicoSalvo = localStorage.getItem('rankingLattes');
     if (historicoSalvo) {
@@ -29,29 +30,47 @@ export default function Home() {
     }
   }, []);
 
-  // Função responsável pelo payload de busca
-  const buildPayload = (code) => {
-    const payload = {
-      code: code,
-      tipo: searchType,
-    };
+  const atualizarRanking = (novoDado, termoPesquisado) => {
+    const pedacosUrl = termoPesquisado.split('/');
+    const idLimpo = pedacosUrl[pedacosUrl.length - 1].trim();
 
+    setTopPesquisas((rankingAntigo) => {
+      const novaPesquisa = {
+        nome: novoDado.nome || 'Não identificado',
+        pontuação: novoDado.barema.total_limitado,
+        id: idLimpo 
+      };
+
+      const listaSemDuplicata = rankingAntigo.filter(item => item.id !== novaPesquisa.id);
+      const novaLista = [...listaSemDuplicata, novaPesquisa]
+        .sort((a, b) => b.pontuacao - a.pontuacao)
+        .slice(0, 5);
+
+      localStorage.setItem('rankingLattes', JSON.stringify(novaLista));
+      return novaLista;
+    });
+  };
+
+  const limparHistorico = () => {
+    localStorage.removeItem('rankingLattes');
+    setTopPesquisas([]);
+  };
+
+  // Lógica de Requisição
+  const buildPayload = (code) => {
+    const payload = { code: code, tipo: searchType };
     if (searchType === 'aeri' && aeriEntryYear) {
       payload.data_ingresso = aeriEntryYear.toString();
     }
-
     return payload;
   };
 
   const realizarConsulta = async (termoDeBusca) => {
     if (!termoDeBusca) return;
-    console.log('Realizando consulta:', buildPayload(termoDeBusca))
     setLoading(true);
     setStatus({ type: 'info', message: 'Consultando a API e coletando os dados do currículo...' });
     setResultado(null);
-  
     setUrl(termoDeBusca); 
-
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
@@ -74,31 +93,6 @@ export default function Home() {
     }
   };
 
-  
-  const atualizarRanking = (novoDado, termoPesquisado) => {
-  
-    const pedacosUrl = termoPesquisado.split('/');
-    const idLimpo = pedacosUrl[pedacosUrl.length - 1].trim();
-
-    setTopPesquisas((rankingAntigo) => {
-      const novaPesquisa = {
-        nome: novoDado.nome || 'Não identificado',
-        pontuacao: novoDado.barema.total_limitado,
-        id: idLimpo 
-      };
-
-      const listaSemDuplicata = rankingAntigo.filter(item => item.id !== novaPesquisa.id);
-
-      const novaLista = [...listaSemDuplicata, novaPesquisa]
-        .sort((a, b) => b.pontuacao - a.pontuacao)
-        .slice(0, 5);
-
-      localStorage.setItem('rankingLattes', JSON.stringify(novaLista));
-
-      return novaLista;
-    });
-  };
- 
   const buscarLattes = (e) => {
     e.preventDefault();
     if (!url.trim()) {
@@ -108,185 +102,33 @@ export default function Home() {
     realizarConsulta(url); 
   };
 
-  const limparHistorico = () => {
-    localStorage.removeItem('rankingLattes');
-    setTopPesquisas([]);
-  };
-
   return (
     <main className="page">
-      {/* Seção Hero Responsiva */}
-      <section className="hero hero-responsive">
-        <div className="hero-text-container"> 
-          <span className="hero-badge">
-            Projeto de extensão • UEFS
-          </span>
-          <h1>PontuaLattes</h1>
-          <p className="hero-lead">
-            Sistema que analisa o currículo Lattes e organiza automaticamente o barema para apoiar a avaliação de candidatos a bolsas de Iniciação Científica da UEFS.
-          </p>
-          <div className="hero-meta">
-            <a 
-              className="hero-link" 
-              href={`http://www.pppg.uefs.br/arquivos/File/editais/IC/${currentYear}/Edital_IC_UEFS_${currentYear}.pdf`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              Ver edital IC UEFS {currentYear}
-            </a>
-          </div>
-        </div>
+      <Hero currentYear={currentYear} />
+      
+      <LattesForm 
+        buscarLattes={buscarLattes}
+        searchType={searchType}
+        setSearchType={setSearchType}
+        isAeriSelected={isAeriSelected}
+        aeriEntryYear={aeriEntryYear}
+        setAeriEntryYear={setAeriEntryYear}
+        currentYear={currentYear}
+        url={url}
+        setUrl={setUrl}
+        loading={loading}
+        status={status}
+      />
 
-        <img 
-          src={logoUefs} 
-          alt="logoUefs" 
-          style={{ 
-            maxWidth: '200px',
-            width: '100%',
-            height: 'auto',         
-            borderRadius: '12px',   
-            flexShrink: 0,          
-            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-          }} 
-        />
-      </section>
+      <Results resultado={resultado} />
 
-      {/* Seção do Formulário */}
-      <section className="panel form-panel">
-        <form onSubmit={buscarLattes}>
-          <div>
-          <RoleSelector value={searchType} setValue={setSearchType} />
+      <Ranking 
+        topPesquisas={topPesquisas} 
+        limparHistorico={limparHistorico} 
+        realizarConsulta={realizarConsulta} 
+      />
 
-          {isAeriSelected && (
-            <div className="aeri-input-group">
-              <label htmlFor="aeri-entry-year">Insira o ano de entrada na UEFS</label>
-              <input
-                id="aeri-entry-year"
-                type="number"
-                value={aeriEntryYear}
-                onChange={(e) => setAeriEntryYear(e.target.value)}
-                placeholder="Ex: 2020"
-                min={1900}
-                max={currentYear}
-              />
-            </div>
-          )}
-
-            <label htmlFor="lattes-url" className={isAeriSelected ? 'lattes-url-label-with-spacing' : ''}>URL completa ou código do currículo Lattes</label>
-            <div className="input-row">
-              <input
-                id="lattes-url"
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://lattes.cnpq.br/(ID Lattes) ou ID Lattes"
-                required
-              />
-              <button type="submit" disabled={loading}>
-                {loading ? 'Consultando...' : 'Consultar'}
-              </button>
-            </div>
-          </div>
-          <p className="helper-text">Informe a URL completa ou o código público do currículo Lattes.</p>
-          
-          {status.message && (
-            <div className={`status visible ${status.type}`} aria-live="polite">
-              {status.message}
-            </div>
-          )}
-        </form>
-      </section>
-
-      {/* Resultados Atuais */}
-      {resultado && resultado.barema && (
-        <section id="results" className="results visible">
-          <div className="summary">
-            <article className="panel stat-card">
-              <h2>Total do barema</h2>
-              <div className="stat-value">{formatNumber(resultado.barema.total_limitado)}</div>
-              <div className="stat-label">
-                Pontuação máxima: {resultado.barema.tipo === 'aeri' ? '40' : '60'} pontos
-              </div>
-            </article>
-            <article className="panel stat-card">
-              <h2>Total de publicações</h2>
-              <div className="stat-value">{resultado.publicacoes?.total_geral || 0}</div>
-              <div className="stat-label">Soma das séries bibliográficas extraídas</div>
-            </article>
-          </div>
-          
-          <article className="panel details-card">
-            <h2>Resumo da coleta</h2>
-            <ul className="details-list">
-              <li><strong>Nome:</strong> {resultado.nome || 'Não identificado'}</li>
-              <li><strong>Indicadores:</strong> <a className="soft-link" href={`http://buscatextual.cnpq.br/buscatextual/graficos.do?metodo=apresentar&codRHCript=${resultado.code}`} target="_blank" rel="noopener noreferrer">Link</a></li>
-            </ul>
-          </article>
-          <BaremaCard barema={resultado.barema} />
-        </section>
-      )}
-
-  
-   
-      {topPesquisas.length > 0 && (
-        
-        <section className="panel ranking-panel">
-          
-          <div className="ranking-header">
-            <h2 style={{ margin: 0 }}>Top 5 Pontuações Pesquisadas</h2>
-            <button 
-              onClick={limparHistorico}
-              className="btn-clear-ranking"
-            >
-              Limpar Ranking
-            </button>
-          </div>
-          
-          <ul className="ranking-list">
-            {topPesquisas.map((item, index) => (
-              <li 
-                key={item.id} 
-            
-                className={`ranking-item ${index === 0 ? 'first-place' : ''}`}
-              >
-                <div className="ranking-info">
-                  <span className="ranking-position">
-                    {index + 1}º
-                  </span>
-                  <span 
-                    className="ranking-name ranking-link" 
-                    onClick={() => realizarConsulta(item.id)}
-                    title={`Recalcular barema de ${item.nome}`}
-                  >
-                    {item.nome}
-                  </span>
-                </div>
-                
-                <div className="ranking-score">
-                  {formatNumber(item.pontuacao)} <span className="ranking-score-label">pts</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-          
-        </section>
-      )}
-
-     {/* Rodapé */}
-      {/* <footer className="footer panel">
-        <div className="footer-grid">
-          <div>
-            <h2>Desenvolvedores:</h2>
-            <p>
-              <a className="soft-link" href="https://github.com/argalvao" target="_blank" rel="noopener noreferrer">Abel Galvão</a>,{' '}
-              <a className="soft-link" href="https://github.com/Oguelo" target="_blank" rel="noopener noreferrer">Alex Júnior</a> e{' '}
-              <a className="soft-link" href="https://github.com/BRCZ1N" target="_blank" rel="noopener noreferrer">Bruno Campos</a>
-            </p>
-            <h2 style={{ marginTop: '24px' }}>Agradecimentos:</h2>
-            <p>Ao professor Mirco Ragni por fornecer a ideia por trás para a coleta de dados do Lattes.</p>
-          </div>
-        </div>
-      </footer> */}
+      <Footer />
     </main>
   );
 }
