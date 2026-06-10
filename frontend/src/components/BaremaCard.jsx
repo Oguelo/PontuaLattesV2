@@ -73,6 +73,108 @@ const BaremaSection = ({ title, section, maxLabel }) => {
     );
 };
 
+// --- Sub-componente: Exclusivo para Barema Professor ---
+const RenderProfessor = ({ barema }) => (
+    <>
+        <div className="barema-highlight-grid">
+            <div className="barema-highlight-item">
+                <span className="barema-highlight-label">Titulação</span>
+                <strong>{formatNumber(barema.titulacao?.subtotal_limitado)}</strong>
+            </div>
+            <div className="barema-highlight-item">
+                <span className="barema-highlight-label">Produção</span>
+                <strong>{formatNumber(barema.producao?.subtotal_limitado)}</strong>
+            </div>
+            <div className="barema-highlight-item">
+                <span className="barema-highlight-label">Formação RH</span>
+                <strong>{formatNumber(barema.formacao_recursos_humanos?.subtotal_limitado)}</strong>
+            </div>
+            <div className="barema-highlight-item">
+                <span className="barema-highlight-label">Eventos/comitê</span>
+                <strong>{formatNumber(barema.participacao_eventos_comite?.subtotal_limitado)}</strong>
+            </div>
+            <div className="barema-highlight-item barema-highlight-total">
+                <span className="barema-highlight-label">Total final</span>
+                <strong>{formatNumber(barema.total_limitado)}</strong>
+            </div>
+        </div>
+
+        <div className="barema-sections">
+            <BaremaSection
+                title="I - Titulação"
+                section={buildTitulationSection(barema.titulacao || {})}
+                maxLabel={getMaximumAllowedLabel('I - Titulação', barema.titulacao || {})}
+            />
+            <BaremaSection
+                title="II - Produção"
+                section={barema.producao || {}}
+                maxLabel={getMaximumAllowedLabel('II - Produção', barema.titulacao || {})}
+            />
+            <BaremaSection
+                title="III - Formação de recursos humanos"
+                section={barema.formacao_recursos_humanos || {}}
+                maxLabel={getMaximumAllowedLabel('III - Formação de recursos humanos', barema.titulacao || {})}
+            />
+            <BaremaSection
+                title="IV - Participação em eventos/comitê"
+                section={barema.participacao_eventos_comite || {}}
+                maxLabel={getMaximumAllowedLabel('IV - Participação em eventos/comitê', barema.titulacao || {})}
+            />
+        </div>
+    </>
+);
+
+// --- Sub-componente: Exclusivo para Barema AERI ---
+const RenderAeri = ({ barema }) => (
+    <>
+        <div className="barema-highlight-grid">
+            <div className="barema-highlight-item">
+                <span className="barema-highlight-label">Participação Eventos</span>
+                <strong>{formatNumber(barema.participacao_eventos?.subtotal_limitado)}</strong>
+            </div>
+            <div className="barema-highlight-item">
+                <span className="barema-highlight-label">Produção Científica</span>
+                <strong>{formatNumber(barema.producao_cientifica?.subtotal_limitado)}</strong>
+            </div>
+            <div className="barema-highlight-item">
+                <span className="barema-highlight-label">Liderança Estudantil</span>
+                <strong>{formatNumber(barema.lideranca_estudantil?.subtotal_limitado)}</strong>
+            </div>
+            <div className="barema-highlight-item">
+                <span className="barema-highlight-label">Programas Acadêmicos</span>
+                <strong>{formatNumber(barema.programas_academicos?.subtotal_limitado)}</strong>
+            </div>
+            <div className="barema-highlight-item barema-highlight-total">
+                <span className="barema-highlight-label">Total final</span>
+                <strong>{formatNumber(barema.total_limitado)}</strong>
+            </div>
+        </div>
+
+        <div className="barema-sections">
+            <BaremaSection
+                title="3.1 - Participação/Organização em Eventos"
+                section={barema.participacao_eventos || {}}
+                maxLabel={barema.participacao_eventos?.limite || 10}
+            />
+            <BaremaSection
+                title="3.2 - Produção Científica/Tecnológica"
+                section={barema.producao_cientifica || {}}
+                maxLabel={barema.producao_cientifica?.limite || 10}
+            />
+            <BaremaSection
+                title="3.3 - Representação/Liderança Estudantil"
+                section={barema.lideranca_estudantil || {}}
+                maxLabel={barema.lideranca_estudantil?.limite || 10}
+            />
+            <BaremaSection
+                title="3.4 - Programas Acadêmicos/Estágios"
+                section={barema.programas_academicos || {}}
+                maxLabel={barema.programas_academicos?.limite || 10}
+            />
+        </div>
+    </>
+);
+
 // --- Componente Principal ---
 export default function BaremaCard({ barema }) {
     if (!barema) return null;
@@ -85,103 +187,8 @@ export default function BaremaCard({ barema }) {
         <article className="panel details-card">
             <h2>{titulo}</h2>
 
-            {/* Grid de Destaques Superiores */}
-            <div className="barema-highlight-grid">
-                {isTipoProfessor ? (
-                    <>
-                        <div className="barema-highlight-item">
-                            <span className="barema-highlight-label">Titulação</span>
-                            <strong>{formatNumber(barema.titulacao?.subtotal_limitado)}</strong>
-                        </div>
-                        <div className="barema-highlight-item">
-                            <span className="barema-highlight-label">Produção</span>
-                            <strong>{formatNumber(barema.producao?.subtotal_limitado)}</strong>
-                        </div>
-                        <div className="barema-highlight-item">
-                            <span className="barema-highlight-label">Formação RH</span>
-                            <strong>{formatNumber(barema.formacao_recursos_humanos?.subtotal_limitado)}</strong>
-                        </div>
-                        <div className="barema-highlight-item">
-                            <span className="barema-highlight-label">Eventos/comitê</span>
-                            <strong>{formatNumber(barema.participacao_eventos_comite?.subtotal_limitado)}</strong>
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        <div className="barema-highlight-item">
-                            <span className="barema-highlight-label">Participação Eventos</span>
-                            <strong>{formatNumber(barema.participacao_eventos?.subtotal_limitado)}</strong>
-                        </div>
-                        <div className="barema-highlight-item">
-                            <span className="barema-highlight-label">Produção Científica</span>
-                            <strong>{formatNumber(barema.producao_cientifica?.subtotal_limitado)}</strong>
-                        </div>
-                        <div className="barema-highlight-item">
-                            <span className="barema-highlight-label">Liderança Estudantil</span>
-                            <strong>{formatNumber(barema.lideranca_estudantil?.subtotal_limitado)}</strong>
-                        </div>
-                        <div className="barema-highlight-item">
-                            <span className="barema-highlight-label">Programas Acadêmicos</span>
-                            <strong>{formatNumber(barema.programas_academicos?.subtotal_limitado)}</strong>
-                        </div>
-                    </>
-                )}
-                <div className="barema-highlight-item barema-highlight-total">
-                    <span className="barema-highlight-label">Total final</span>
-                    <strong>{formatNumber(barema.total_limitado)}</strong>
-                </div>
-            </div>
-
-            {/* As Tabelas */}
-            <div className="barema-sections">
-                {isTipoProfessor ? (
-                    <>
-                        <BaremaSection
-                            title="I - Titulação"
-                            section={buildTitulationSection(barema.titulacao || {})}
-                            maxLabel={getMaximumAllowedLabel('I - Titulação', barema.titulacao || {})}
-                        />
-                        <BaremaSection
-                            title="II - Produção"
-                            section={barema.producao || {}}
-                            maxLabel={getMaximumAllowedLabel('II - Produção', barema.titulacao || {})}
-                        />
-                        <BaremaSection
-                            title="III - Formação de recursos humanos"
-                            section={barema.formacao_recursos_humanos || {}}
-                            maxLabel={getMaximumAllowedLabel('III - Formação de recursos humanos', barema.titulacao || {})}
-                        />
-                        <BaremaSection
-                            title="IV - Participação em eventos/comitê"
-                            section={barema.participacao_eventos_comite || {}}
-                            maxLabel={getMaximumAllowedLabel('IV - Participação em eventos/comitê', barema.titulacao || {})}
-                        />
-                    </>
-                ) : (
-                    <>
-                        <BaremaSection
-                            title="3.1 - Participação/Organização em Eventos"
-                            section={barema.participacao_eventos || {}}
-                            maxLabel={barema.participacao_eventos?.limite || 10}
-                        />
-                        <BaremaSection
-                            title="3.2 - Produção Científica/Tecnológica"
-                            section={barema.producao_cientifica || {}}
-                            maxLabel={barema.producao_cientifica?.limite || 10}
-                        />
-                        <BaremaSection
-                            title="3.3 - Representação/Liderança Estudantil"
-                            section={barema.lideranca_estudantil || {}}
-                            maxLabel={barema.lideranca_estudantil?.limite || 10}
-                        />
-                        <BaremaSection
-                            title="3.4 - Programas Acadêmicos/Estágios"
-                            section={barema.programas_academicos || {}}
-                            maxLabel={barema.programas_academicos?.limite || 10}
-                        />
-                    </>
-                )}
-            </div>
+            {/* O "maestro" escolhe quem renderizar de forma limpa */}
+            {isTipoProfessor ? <RenderProfessor barema={barema} /> : <RenderAeri barema={barema} />}
 
             {/* Lista de Observações (se houver) */}
             {observacoes.length > 0 && (
