@@ -98,7 +98,7 @@ export default function Home() {
         realizarConsulta={realizarConsulta} 
       />
 
-      <Footer />
+      {/* <Footer /> */}
     </main>
   );
 }
