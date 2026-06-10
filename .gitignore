@@ -4,3 +4,14 @@ credenciais.json
 
 .venv/
 __pycache__/
+
+# Ambiente Virtual
+venv/
+.venv/
+env/
+
+# Cache do Python
+__pycache__/
+*.pyc
+
+*.cpython-312.pyc
