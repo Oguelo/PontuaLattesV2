@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState } from 'react';
+import { api } from './services/api';
+import { useRanking } from './hooks/useRanking';
 
+// Componentes Visuais
 import Hero from './components/Hero';
 import LattesForm from './components/LattesForm';
 import Results from './components/Results';
@@ -12,51 +14,17 @@ const getCurrentBaremaYear = () => new Date().getFullYear();
 export default function Home() {
   const currentYear = getCurrentBaremaYear();
   
+  const { topPesquisas, atualizarRanking, limparHistorico } = useRanking();
+
   const [url, setUrl] = useState('');
   const [status, setStatus] = useState({ type: '', message: '' });
   const [loading, setLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [searchType, setSearchType] = useState('aeri');
   const [aeriEntryYear, setAeriEntryYear] = useState('');
-  const [topPesquisas, setTopPesquisas] = useState([]);
 
   const isAeriSelected = searchType === 'aeri';
 
-  // Lógica do Ranking
-  useEffect(() => {
-    const historicoSalvo = localStorage.getItem('rankingLattes');
-    if (historicoSalvo) {
-      setTopPesquisas(JSON.parse(historicoSalvo));
-    }
-  }, []);
-
-  const atualizarRanking = (novoDado, termoPesquisado) => {
-    const pedacosUrl = termoPesquisado.split('/');
-    const idLimpo = pedacosUrl[pedacosUrl.length - 1].trim();
-
-    setTopPesquisas((rankingAntigo) => {
-      const novaPesquisa = {
-        nome: novoDado.nome || 'Não identificado',
-        pontuação: novoDado.barema.total_limitado,
-        id: idLimpo 
-      };
-
-      const listaSemDuplicata = rankingAntigo.filter(item => item.id !== novaPesquisa.id);
-      const novaLista = [...listaSemDuplicata, novaPesquisa]
-        .sort((a, b) => b.pontuacao - a.pontuacao)
-        .slice(0, 5);
-
-      localStorage.setItem('rankingLattes', JSON.stringify(novaLista));
-      return novaLista;
-    });
-  };
-
-  const limparHistorico = () => {
-    localStorage.removeItem('rankingLattes');
-    setTopPesquisas([]);
-  };
-
-  // Lógica de Requisição
   const buildPayload = (code) => {
     const payload = { code: code, tipo: searchType };
     if (searchType === 'aeri' && aeriEntryYear) {
@@ -71,10 +39,12 @@ export default function Home() {
     setStatus({ type: 'info', message: 'Consultando a API e coletando os dados do currículo...' });
     setResultado(null);
     setUrl(termoDeBusca); 
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
-      const response = await axios.post('/api/lattes', buildPayload(termoDeBusca));
+      // Usando a nossa api configurada (repare que o '/api' saiu da rota)
+      const response = await api.post('/lattes', buildPayload(termoDeBusca));
       
       if (response.data && response.data.success) {
         setResultado(response.data);
@@ -86,7 +56,7 @@ export default function Home() {
     } catch (error) {
       setStatus({ 
         type: 'error', 
-        message: error.response?.data?.message || error.message || 'Erro inesperado ao chamar a API.' 
+        message: error.response?.data?.message || error.message || 'Erro inesperado.' 
       });
     } finally {
       setLoading(false);
@@ -96,7 +66,7 @@ export default function Home() {
   const buscarLattes = (e) => {
     e.preventDefault();
     if (!url.trim()) {
-      setStatus({ type: 'error', message: 'Informe a URL completa ou o código do currículo Lattes.' });
+      setStatus({ type: 'error', message: 'Informe a URL ou o código do currículo.' });
       return;
     }
     realizarConsulta(url); 
