@@ -82,14 +82,13 @@ export default function Results({ resultado }) {
     
       <BaremaCard barema={barema} />
 
-            <article className="panel details-card">
+      <article className="panel details-card">
         <h2 id="publications-title">Publicações de {anoMinimo} a {anoAtual}</h2>
         <div id="publication-list" className="publication-list">
           {seriesPeriodo.length === 0 && (
             <div className="publication-item">Nenhuma publicação encontrada entre {anoMinimo} e {anoAtual}.</div>
           )}
           {seriesPeriodo.map((item) => {
-            // Filtra os anos com > 0 publicações antes de formatar o texto
             const porAno = Object.entries(item.por_ano || {})
               .filter(([ano, valor]) => Number(valor) > 0)
               .map(([ano, valor]) => `${ano}: ${valor}`)
